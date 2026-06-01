@@ -140,6 +140,10 @@
             <button class="filter-btn" data-filter="easy">Easy</button>
             <button class="filter-btn" data-filter="medium">Medium</button>
             <button class="filter-btn" data-filter="hard">Hard</button>
+            <button class="filter-btn" data-filter="favorites">
+              <i class="fas fa-heart"></i>
+              Favorites
+            </button>
           </div>
         </div>
         <div class="problems-grid">
@@ -728,9 +732,9 @@
             </div>
             <div class="profile-info">
               <h3 id="profileSectionName">Learner</h3>
-              <p class="profile-level" id="profileLevel">Level 1 - Beginner</p>
+              <p class="profile-level" id="profileLevelSection">Level 1 - Beginner</p>
               <p class="profile-join">
-                Joined: <span id="joinDate">Today</span>
+                Joined: <span id="joinDateSection">Today</span>
               </p>
             </div>
             <button
@@ -744,19 +748,19 @@
           <!-- Profile Stats -->
           <div class="profile-stats">
             <div class="profile-stat">
-              <span class="profile-stat-value" id="profileTotalXP">0</span>
+              <span class="profile-stat-value" id="profileTotalXPSection">0</span>
               <span class="profile-stat-label">Total XP</span>
             </div>
             <div class="profile-stat">
-              <span class="profile-stat-value" id="profileProblems">0</span>
+              <span class="profile-stat-value" id="profileProblemsSection">0</span>
               <span class="profile-stat-label">Problems</span>
             </div>
             <div class="profile-stat">
-              <span class="profile-stat-value" id="profileStreak">0</span>
+              <span class="profile-stat-value" id="profileStreakSection">0</span>
               <span class="profile-stat-label">Day Streak</span>
             </div>
             <div class="profile-stat">
-              <span class="profile-stat-value" id="profileBadges">0</span>
+              <span class="profile-stat-value" id="profileBadgesSection">0</span>
               <span class="profile-stat-label">Badges</span>
             </div>
           </div>
@@ -765,10 +769,10 @@
             <div class="progress-bar-container">
               <div class="progress-label">
                 <span>Level Progress</span>
-                <span id="profileLevelProgress">0%</span>
+                <span id="profileLevelProgressSection">0%</span>
               </div>
               <div class="progress-bar">
-                <div class="progress-fill" id="profileProgressBar"></div>
+                <div class="progress-fill" id="profileProgressBarSection"></div>
               </div>
             </div>
           </div>

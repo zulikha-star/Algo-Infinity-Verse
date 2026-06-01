@@ -39,6 +39,17 @@ A modern, interactive web application for learning and practicing DSA concepts w
 - Acceptance rate tracking
 - Visual completion badges
 
+## New Feature: Favorite Problems ❤️
+
+Users can now:
+- Mark practice problems as favorites
+- Filter favorite problems
+- Persist favorites using localStorage
+
+### How it works
+- Click the heart icon on any practice problem
+- Use the "Favorites" filter to view saved problems
+
 ### Quiz System
 
 **60 Topic-Specific Questions** (10 per topic covering key concepts)

@@ -682,17 +682,71 @@ body {
   border-color: var(--accent);
 }
 
+/* ===== FAVORITE BUTTON ===== */
+
+.favorite-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.3s ease;
+
+  margin-left: auto;
+  margin-right: 0.7rem;
+
+  backdrop-filter: blur(10px);
+}
+
+.favorite-btn:hover {
+  transform: scale(1.12);
+  color: #ff4d6d;
+  border-color: #ff4d6d;
+  box-shadow: 0 0 15px rgba(255, 77, 109, 0.35);
+}
+
+.favorite-btn.active {
+  background: rgba(255, 77, 109, 0.15);
+  color: #ff4d6d;
+  border-color: #ff4d6d;
+}
+
+.favorite-btn i {
+  pointer-events: none;
+}
+
+/* Favorites filter special style */
+
+.filter-btn[data-filter="favorites"] {
+  color: #ff4d6d;
+}
+
+.filter-btn[data-filter="favorites"].active {
+  background: #ff4d6d;
+  color: white;
+  border-color: #ff4d6d;
+}
+
 .problem-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  gap: 0.6rem;
 }
 
 .problem-title {
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
+  flex: 1;
 }
 
 .problem-id {
@@ -706,6 +760,12 @@ body {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.problem-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .tag {
@@ -1169,7 +1229,7 @@ body {
 
 .profile-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
