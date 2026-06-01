@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Support Center - Algo Infinity Verse</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-logo">
+            <span class="logo-text">∞</span>
+            <span class="logo-title">Algo Infinity Verse</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="../index.html#home">Home</a></li>
+            <li><a href="../index.html#topics">DSA Topics</a></li>
+            <li><a href="../index.html#quiz">Quizzes</a></li>
+            <li><a href="../index.html#practice">Practice</a></li>
+            <li><a href="../index.html#roadmap">Roadmap</a></li>
+            <li><a href="../index.html#interview">Interview Prep</a></li>
+            <li><a href="../index.html#dashboard">Dashboard</a></li>
+            <li><a href="../index.html#profile">Profile</a></li>
+        </ul>
+        <div class="nav-buttons">
+            <button class="dark-mode-btn">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+    <section class="support-page">
+        <div class="support-container">
+            <h1 class="section-title">
+                <span class="title-icon">🛟</span>
+                Support Center
+            </h1>
+            <p class="section-subtitle">
+                Get help and report bugs
+            </p>
+            <div class="support-grid">
+                <div class="support-card">
+                    <h2>Support Request</h2>
+                    <form class="support-form" id="supportForm">
+                        <input type="text" placeholder="Name" required>
+                        <input type="email" placeholder="Email" required>
+                        <input type="text" placeholder="Subject" required>
+                        <textarea placeholder="Message" required></textarea>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Request
+                        </button>
+                    </form>
+                </div>
+                <div class="support-card">
+                    <h2>Bug Report</h2>
+                    <form class="support-form" id="bugForm">
+                        <select required>
+                            <option value="">Select Bug Type</option>
+                            <option>UI Issue</option>
+                            <option>Performance Bug</option>
+                            <option>Crash</option>
+                            <option>Other</option>
+                        </select>
+                        <textarea placeholder="Describe the issue" required></textarea>
+                        <input type="file">
+                        <button class="btn btn-secondary" type="submit">
+                            <i class="fas fa-bug"></i>
+                            Report Bug
+                        </button>
+                    </form>
+                </div>
+                <div class="support-card">
+                    <h2>FAQs</h2>
+                    <details class="faq-item">
+                        <summary>How do I use the platform?</summary>
+                        <p>
+                            Explore DSA topics, quizzes, practice problems,
+                            and learning roadmaps from the homepage.
+                        </p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>How do I report a bug?</summary>
+                        <p>
+                            Use the bug report section above and explain the issue clearly.
+                        </p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>How can I contact support?</summary>
+                        <p>
+                            Use the contact section below or create a GitHub issue.
+                        </p>
+                    </details>
+                </div>
+                <div class="support-card">
+                    <h2>Contact</h2>
+                    <div class="contact-links">
+                        <a href="mailto:support@algoinfinityverse.com">
+                            <i class="fas fa-envelope"></i>
+                            support@algoinfinityverse.com
+                        </a>
+                        <a href="https://github.com/Eshajha19/Algo-Infinity-Verse/issues">
+                            <i class="fab fa-github"></i>
+                            GitHub Issues
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script src="script.js"></script>
+</body>
+</html>
