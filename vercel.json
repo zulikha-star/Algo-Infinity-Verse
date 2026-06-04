@@ -4,6 +4,20 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": null,
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/signup.html"
+    },
+    {
+      "source": "/community",
+      "destination": "/community.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
