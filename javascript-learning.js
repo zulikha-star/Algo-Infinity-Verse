@@ -7,7 +7,10 @@
  *  - Progress bar (tracks completed topics via localStorage)
  *  - Exercise toggle (show/hide solutions)
  *  - Copy code button
+ *  - Interactive Quiz
  */
+
+import { initQuiz } from './modules/quiz.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   initHeroTyping();
@@ -16,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCopyButtons();
   initSidebarSpy();
   initProgressTracker();
+  initJSQuiz();
 });
 
 /* ─────────────────────────────────────────────
@@ -217,7 +221,7 @@ function initSidebarSpy() {
    ───────────────────────────────────────────── */
 function initProgressTracker() {
   const STORAGE_KEY = "javascript-learning-progress";
-  const TOTAL_TOPICS = 12;
+  const TOTAL_TOPICS = 13;
   const fill = document.getElementById("progressFill");
   const count = document.getElementById("progressCount");
   const bar = document.querySelector(".js-progress-bar");
@@ -268,4 +272,47 @@ function initProgressTracker() {
   );
 
   lessons.forEach((l) => observer.observe(l));
+}
+
+/* ─────────────────────────────────────────────
+   Interactive Knowledge Check Quiz
+   ───────────────────────────────────────────── */
+function initJSQuiz() {
+  const jsQuestions = [
+    {
+      question: "Which of the following keywords is used to declare an immutable variable in modern JavaScript?",
+      options: ["var", "let", "const", "static"],
+      answer: "const",
+      explanation: "The 'const' keyword declares a block-scoped, immutable variable."
+    },
+    {
+      question: "What will `typeof null` evaluate to in JavaScript?",
+      options: ["\"null\"", "\"undefined\"", "\"object\"", "\"boolean\""],
+      answer: "\"object\"",
+      explanation: "Due to a historical quirk in JavaScript, `typeof null` returns 'object' instead of 'null'."
+    },
+    {
+      question: "Which operator performs a strict equality comparison (checking both value and type)?",
+      options: ["==", "===", "=", "!=="],
+      answer: "===",
+      explanation: "The '===' operator is the strict equality operator, checking both type and value."
+    },
+    {
+      question: "How do you add an element to the end of a JavaScript array?",
+      options: ["array.unshift()", "array.pop()", "array.add()", "array.push()"],
+      answer: "array.push()",
+      explanation: "The push() method adds one or more elements to the end of an array."
+    },
+    {
+      question: "Which method is used to attach an event handler to a DOM element?",
+      options: ["attachEvent()", "listenEvent()", "addEventListener()", "onEvent()"],
+      answer: "addEventListener()",
+      explanation: "The modern and standard way to attach event handlers is using addEventListener()."
+    }
+  ];
+
+  initQuiz({
+    containerId: "js-quiz-container",
+    questions: jsQuestions
+  });
 }
