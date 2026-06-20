@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCopyButtons();
   initSidebarSpy();
   initProgressTracker();
+  initSlidingWindowVisualizer();
 });
 
 /* ─────────────────────────────────────────────
@@ -39,7 +40,7 @@ function initHeroTyping() {
   let isDeleting = false;
 
   const prefersReducedMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)"
+    "(prefers-reduced-motion: reduce)",
   ).matches;
 
   if (prefersReducedMotion) {
@@ -93,7 +94,7 @@ function initStatsAnimation() {
         }
       });
     },
-    { threshold: 0.5, rootMargin: "0px 0px -50px 0px" }
+    { threshold: 0.5, rootMargin: "0px 0px -50px 0px" },
   );
 
   statNumbers.forEach((s) => observer.observe(s));
@@ -103,17 +104,19 @@ function initStatsAnimation() {
    Exercise Show/Hide Toggle
    ───────────────────────────────────────────── */
 function initExerciseToggles() {
-  document.querySelectorAll(".sliding-window-exercise-toggle").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("aria-controls");
-      const solution = document.getElementById(targetId);
-      if (!solution) return;
+  document
+    .querySelectorAll(".sliding-window-exercise-toggle")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("aria-controls");
+        const solution = document.getElementById(targetId);
+        if (!solution) return;
 
-      const isVisible = solution.classList.toggle("visible");
-      btn.setAttribute("aria-expanded", isVisible);
-      btn.textContent = isVisible ? "Hide Solution" : "Show Solution";
+        const isVisible = solution.classList.toggle("visible");
+        btn.setAttribute("aria-expanded", isVisible);
+        btn.textContent = isVisible ? "Hide Solution" : "Show Solution";
+      });
     });
-  });
 }
 
 /* ─────────────────────────────────────────────
@@ -191,7 +194,7 @@ function initSidebarSpy() {
       if (id) {
         links.forEach((l) => l.classList.remove("active"));
         const active = document.querySelector(
-          `.sliding-window-sidebar-nav a[href="#${id}"]`
+          `.sliding-window-sidebar-nav a[href="#${id}"]`,
         );
         if (active) active.classList.add("active");
       }
@@ -247,18 +250,139 @@ function initProgressTracker() {
       });
       if (changed) {
         try {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify([...completed])
-          );
+          localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]));
         } catch {
           /* ignore storage limitations */
         }
         updateUI();
       }
     },
-    { threshold: 0.15, rootMargin: "0px 0px -20% 0px" }
+    { threshold: 0.15, rootMargin: "0px 0px -20% 0px" },
   );
 
   lessons.forEach((l) => observer.observe(l));
+}
+
+/* ─────────────────────────────────────────────
+   Sliding Window Motion Visualizer
+   ───────────────────────────────────────────── */
+
+function initSlidingWindowVisualizer() {
+  const container = document.getElementById("swArray");
+
+  if (!container) return;
+
+  const playBtn = document.getElementById("swStartBtn");
+  const nextBtn = document.getElementById("swNextBtn");
+  const resetBtn = document.getElementById("swResetBtn");
+
+  const leftEl = document.getElementById("swLeft");
+  const rightEl = document.getElementById("swRight");
+
+  const currentSumEl = document.getElementById("swCurrentSum");
+  const bestSumEl = document.getElementById("swBestSum");
+
+  const explanationEl = document.getElementById("swExplanation");
+
+  const arr = [1, 2, 3, 4, 5, 6, 7];
+  const windowSize = 3;
+
+  let bestSum = 0;
+  let bestWindowStart = 0;
+  let currentIndex = 0;
+  let timer = null;
+
+  function renderWindow(start) {
+    container.innerHTML = "";
+
+    let currentSum = 0;
+
+    arr.forEach((value, index) => {
+      const item = document.createElement("div");
+      item.className = "array-item";
+
+      if (index >= bestWindowStart && index < bestWindowStart + windowSize) {
+        item.classList.add("best-window");
+      }
+      if (index >= start && index < start + windowSize) {
+        item.classList.add("active-window");
+        currentSum += value;
+      }
+
+      item.textContent = value;
+      container.appendChild(item);
+    });
+
+    bestSum = Math.max(bestSum, currentSum);
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestWindowStart = start;
+    }
+
+    leftEl.textContent = start;
+    rightEl.textContent = start + windowSize - 1;
+
+    currentSumEl.textContent = currentSum;
+    bestSumEl.textContent = bestSum;
+
+    if (start === 0) {
+      explanationEl.textContent = "Initial window created.";
+    } else {
+      explanationEl.textContent = `Current window sum = ${currentSum}.
+Move both pointers right to check the next window of size ${windowSize}.`;
+    }
+  }
+
+  function playAnimation() {
+    if (timer) return;
+
+    currentIndex = 0;
+    bestSum = 0;
+
+    renderWindow(0);
+
+    timer = setInterval(() => {
+      currentIndex++;
+
+      if (currentIndex > arr.length - windowSize) {
+        clearInterval(timer);
+        timer = null;
+
+        explanationEl.textContent =
+          "Visualization complete. Best window sum found.";
+
+        return;
+      }
+
+      renderWindow(currentIndex);
+    }, 1500);
+  }
+
+  function resetAnimation() {
+    clearInterval(timer);
+    timer = null;
+
+    currentIndex = 0;
+    bestSum = 0;
+
+    renderWindow(0);
+
+    explanationEl.textContent = "Visualizer reset.";
+  }
+
+  playBtn.addEventListener("click", playAnimation);
+
+  resetBtn.addEventListener("click", resetAnimation);
+
+  renderWindow(0);
+  function nextStep() {
+    if (currentIndex < arr.length - windowSize) {
+      currentIndex++;
+      renderWindow(currentIndex);
+    } else {
+      explanationEl.textContent = "Reached the final window.";
+    }
+  }
+
+  nextBtn.addEventListener("click", nextStep);
 }
