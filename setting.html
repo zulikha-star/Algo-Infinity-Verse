@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Setting Page</title>  
+    <link rel="stylesheet" href="setting.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="settings-container">
+
+    <div class="settings-icon">
+        ⚙
+    </div>
+
+    <h1>Settings</h1>
+
+    <p class="subtitle">
+        Manage your account preferences and security
+    </p>
+
+    <!-- Profile Information -->
+         <div class="section">
+        <h2>Profile Information</h2>
+
+        <input type="text" placeholder="Full Name">
+
+        <input type="email" placeholder="Email Address">
+
+        <input type="text" placeholder="Phone Number">
+
+        <button class="btn">
+            Save Changes
+        </button>
+    </div>
+
+    <!-- Security -->
+    <div class="section">
+        <h2>Security</h2>
+
+        <div class="password-box">
+            <input type="password" id="currentPassword" placeholder="Current Password">
+            <span class="eye" onclick="togglePassword('currentPassword')">👁</span>
+        </div>
+
+        <div class="password-box">
+            <input type="password" id="newPassword" placeholder="New Password">
+            <span class="eye" onclick="togglePassword('newPassword')">👁</span>
+        </div>
+
+        <div class="password-box">
+            <input type="password" id="confirmPassword" placeholder="Confirm Password">
+            <span class="eye" onclick="togglePassword('confirmPassword')">👁</span>
+        </div>
+
+        <button class="btn">
+            Update Password
+        </button>
+    </div>
+
+    <!-- Notifications -->
+    <div class="section">
+        <h2>Notification Preferences</h2>
+
+        <div class="setting-item">
+            <span>Email Notifications</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span>Practice Reminders</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span>Community Updates</span>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span>Contest Alerts</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Delete-btn  -->
+        <button class="delete-btn" id="deleteAccountBtn">
+            Delete Account
+        </button>
+        </button>
+    </div>
+
+
+<script src="setting.js"></script>
+
+
+</body>
+</html>
