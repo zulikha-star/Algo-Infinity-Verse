@@ -14,6 +14,12 @@ import { getUserBenchmark } from "./backend/benchmarking/percentileService.js";
 import { fetchWorkflows, analyzeWorkflow } from "./backend/repository-analyzer/cicdValidator.js";
 import { handleReportRequest } from "./backend/reports/reportGenerator.js";
 import { Server as SocketIOServer } from "socket.io";
+import { 
+  SESSION_MAX_AGE_SECONDS, getClientIdentifier, isSignupRateLimited, 
+  recordSignupAttempt, normalizeAuthDelay, createSessionToken, 
+  verifySessionToken, hashPassword, passwordMatches, validateSignup 
+} from "./backend/services/auth.service.js";
+import { applySM2 } from "./backend/services/memory.service.js";
 
 const upload = multer({ storage: multer.memoryStorage() }).single("resume");
 const userSocketMap = new Map();
@@ -25,92 +31,11 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 const MEMORY_FILE = path.join(DATA_DIR, "memory.json");
 const AUDITS_FILE = path.join(DATA_DIR, "audits_history.json");
 const SESSION_COOKIE = "aiv_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
-const PBKDF2_ITERATIONS = 210000;
-const PASSWORD_KEY_LENGTH = 32;
 
-// ── Rate limiting ────────────────────────────────────────────────────────────
-const SIGNUP_RATE_LIMIT = 5;
-const SIGNUP_WINDOW_MS = 15 * 60 * 1000;
-const signupAttempts = new Map();
 const DELETION_LOG_FILE = path.join(
   DATA_DIR,
   "account-deletions.json"
 );
-
-// Periodic sweeper — runs every SIGNUP_WINDOW_MS and deletes any identifier
-// whose timestamps have all aged out of the window.  This bounds the Map to
-// only identifiers that have been active within the last window period and
-// prevents unbounded memory growth under a sustained stream of unique IPs.
-const _signupSweeper = setInterval(() => {
-  const now = Date.now();
-  for (const [identifier, timestamps] of signupAttempts) {
-    const fresh = timestamps.filter((t) => now - t < SIGNUP_WINDOW_MS);
-    if (fresh.length === 0) {
-      signupAttempts.delete(identifier);
-    } else {
-      signupAttempts.set(identifier, fresh);
-    }
-  }
-}, SIGNUP_WINDOW_MS);
-
-// Allow the process to exit cleanly even while the interval is live
-// (relevant in test environments and graceful-shutdown scenarios).
-if (_signupSweeper.unref) _signupSweeper.unref();
-
-// IPs of reverse-proxies / load-balancers that are allowed to set
-// X-Forwarded-For.  Add your proxy CIDRs / IPs here or populate via
-// the TRUSTED_PROXIES env var (comma-separated) at startup.
-const TRUSTED_PROXIES = new Set(
-  (process.env.TRUSTED_PROXIES || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
-);
-
-function getClientIdentifier(req) {
-  const remoteAddress = req.socket?.remoteAddress || "unknown";
-
-  // Only honour X-Forwarded-For when the immediate TCP caller is a
-  // known trusted proxy — otherwise an attacker can supply any value
-  // they like and trivially bypass rate limiting.
-  if (
-    remoteAddress !== "unknown" &&
-    TRUSTED_PROXIES.has(remoteAddress) &&
-    req.headers["x-forwarded-for"]
-  ) {
-    // The left-most entry is the original client IP added by the
-    // first proxy in the chain; everything to the right can be spoofed.
-    const leftmost = req.headers["x-forwarded-for"].split(",")[0].trim();
-    if (leftmost) return leftmost;
-  }
-
-  return remoteAddress;
-}
-
-function isSignupRateLimited(identifier) {
-  const now = Date.now();
-  const attempts = signupAttempts.get(identifier) || [];
-  // Trim stale timestamps on every read so the per-identifier array stays
-  // small even between sweeper runs.
-  const recentAttempts = attempts.filter((t) => now - t < SIGNUP_WINDOW_MS);
-  signupAttempts.set(identifier, recentAttempts);
-  return recentAttempts.length >= SIGNUP_RATE_LIMIT;
-}
-
-function recordSignupAttempt(identifier) {
-  const now = Date.now();
-  const attempts = signupAttempts.get(identifier) || [];
-  // Trim before appending so the array never accumulates beyond
-  // SIGNUP_RATE_LIMIT + 1 entries between sweeper passes.
-  const recentAttempts = attempts.filter((t) => now - t < SIGNUP_WINDOW_MS);
-  recentAttempts.push(now);
-  signupAttempts.set(identifier, recentAttempts);
-}
-
-async function normalizeAuthDelay() {
-  return new Promise((resolve) => setTimeout(resolve, 500));
-}
 // ────────────────────────────────────────────────────────────────────────────
 
 const protectedPaths = new Set([
@@ -162,74 +87,6 @@ async function loadEnvFile() {
     });
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
-  }
-}
-
-function base64Url(input) {
-  return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function fromBase64Url(input) {
-  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
-  return Buffer.from(normalized, "base64").toString("utf8");
-}
-
-function sessionSecret() {
-  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("SESSION_SECRET is required in production.");
-  }
-  return "dev-only-change-me-with-SESSION_SECRET-before-deploying";
-}
-
-function sign(value) {
-  return crypto
-    .createHmac("sha256", sessionSecret())
-    .update(value)
-    .digest("base64url");
-}
-
-function createSessionToken(user) {
-  const header = base64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64Url(
-    JSON.stringify({
-      sub: user.id,
-      name: user.name,
-      email: user.email,
-      exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS,
-    }),
-  );
-  const body = `${header}.${payload}`;
-  return `${body}.${sign(body)}`;
-}
-
-function verifySessionToken(token) {
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [header, payload, signature] = parts;
-  const body = `${header}.${payload}`;
-  const expected = sign(body);
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (
-    signatureBuffer.length !== expectedBuffer.length ||
-    !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
-
-  try {
-    const session = JSON.parse(fromBase64Url(payload));
-    if (!session.exp || session.exp < Math.floor(Date.now() / 1000))
-      return null;
-    return session;
-  } catch {
-    return null;
   }
 }
 
@@ -374,91 +231,7 @@ async function updateMemoryStore(mutator) {
   memoryWriteQueue = task.catch(() => {});
   return task;
 }
-// SM-2 algorithm: quality is 0-5 (0 = total blackout, 5 = perfect recall)
-function applySM2(card, quality) {
-  const q = Math.max(0, Math.min(5, Number(quality)));
-  let { repetitions = 0, easeFactor = 2.5, interval = 0 } = card || {};
-
-  if (q < 3) {
-    repetitions = 0;
-    interval = 1;
-  } else {
-    repetitions += 1;
-    if (repetitions === 1) interval = 1;
-    else if (repetitions === 2) interval = 6;
-    else interval = Math.round(interval * easeFactor);
-  }
-
-  easeFactor = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-  if (easeFactor < 1.3) easeFactor = 1.3;
-
-  const now = new Date();
-  const nextReviewDate = new Date(now);
-  nextReviewDate.setDate(now.getDate() + interval);
-
-  return {
-    topic: card?.topic,
-    repetitions,
-    easeFactor: Math.round(easeFactor * 100) / 100,
-    interval,
-    lastReviewed: now.toISOString(),
-    nextReviewDate: nextReviewDate.toISOString(),
-    lastQuality: q,
-  };
-}
 // ──────────────────────────────────────────────────────────────────────────
-
-function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
-  const hash = crypto
-    .pbkdf2Sync(
-      password,
-      salt,
-      PBKDF2_ITERATIONS,
-      PASSWORD_KEY_LENGTH,
-      "sha256",
-    )
-    .toString("hex");
-  return { salt, hash, iterations: PBKDF2_ITERATIONS, digest: "sha256" };
-}
-
-function passwordMatches(password, stored) {
-  const calculated = crypto.pbkdf2Sync(
-    password,
-    stored.salt,
-    stored.iterations || PBKDF2_ITERATIONS,
-    PASSWORD_KEY_LENGTH,
-    stored.digest || "sha256",
-  );
-  const saved = Buffer.from(stored.hash, "hex");
-  return (
-    saved.length === calculated.length &&
-    crypto.timingSafeEqual(saved, calculated)
-  );
-}
-
-function validateSignup({ name, email, password, confirmPassword }) {
-  const cleanName = String(name || "").trim();
-  const cleanEmail = String(email || "")
-    .trim()
-    .toLowerCase();
-  const rawPassword = String(password || "");
-  const rawConfirm = String(confirmPassword || "");
-
-  if (cleanName.length < 2) return "Name must be at least 2 characters.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    return "Enter a valid email address.";
-  }
-  if (rawPassword.length < 8) return "Password must be at least 8 characters.";
-  if (
-    !/[a-z]/.test(rawPassword) ||
-    !/[A-Z]/.test(rawPassword) ||
-    !/\d/.test(rawPassword)
-  ) {
-    return "Password must include uppercase, lowercase, and a number.";
-  }
-  if (rawPassword !== rawConfirm) return "Passwords do not match.";
-  return null;
-}
 
 async function readJsonBody(req) {
   let body = "";
