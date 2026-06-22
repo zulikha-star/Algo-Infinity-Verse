@@ -350,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
     initFooterCurrentDate();
     updateProfile();
+    initPerlEditor();
     
     console.log('App initialization complete');
 });
@@ -2244,7 +2245,7 @@ window.addEventListener('hashchange', () => {
 // RUN PERL
 // ============================================
 let isRunning = false;
-document.addEventListener("DOMContentLoaded", () => {
+function initPerlEditor() {
   const codeEl = document.getElementById("perlEditor");
   const outputEl = document.getElementById("perlOutput");
   const runBtn = document.getElementById("runBtn");
@@ -2253,7 +2254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (runBtn) runBtn.addEventListener("click", runPerl);
   if (resetBtn) resetBtn.addEventListener("click", () => { if (codeEl) codeEl.value = ""; if (outputEl) outputEl.textContent = "Run code to see output..."; });
   if (sampleBtn) sampleBtn.addEventListener("click", () => { if (codeEl) codeEl.value = `print "Hello World\\n";\n\nmy $name = "DSA Learner";\nprint "Welcome $name\\n";`; });
-});
+}
 
 async function runPerl() {
   if (isRunning) return;
