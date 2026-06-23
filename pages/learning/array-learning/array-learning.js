@@ -109,44 +109,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ════════════════════════════════════════════════════════════
      3. PROGRESS TRACKER
-     FIX: updates both the fill bar, the new percent label,
-          and the ARIA aria-valuenow attribute.
+     Uses IntersectionObserver + localStorage (same pattern as
+     MST learning page) so progress persists across visits.
   ════════════════════════════════════════════════════════════ */
-  const progressFill    = document.getElementById('progressFill');
+  const STORAGE_KEY    = 'array-learning-progress';
+  const TOTAL_TOPICS   = sections.length;
+  const progressFill   = document.getElementById('progressFill');
+  const progressCount  = document.getElementById('progressCount');
   const progressPercent = document.getElementById('progressPercent');
-  const progressBar     = document.querySelector('.arr-progress-bar');
+  const progressBar    = document.querySelector('.arr-progress-bar');
 
-  function updateProgress() {
-    let completed = 0;
+  if (!progressFill || !progressCount) return;
 
-    sections.forEach(section => {
-      const rect = section.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.7) {
-        completed++;
-      }
-    });
+  let completed = new Set();
 
-    const percentage = sections.length
-      ? Math.round((completed / sections.length) * 100)
+  // Restore saved progress
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(saved)) saved.forEach(t => completed.add(t));
+  } catch { /* ignore */ }
+
+  function updateUI() {
+    const pct = TOTAL_TOPICS
+      ? Math.round((completed.size / TOTAL_TOPICS) * 100)
       : 0;
 
-    if (progressFill) {
-      progressFill.style.width = `${percentage}%`;
-    }
-
-    // FIX: update percentage label text
-    if (progressPercent) {
-      progressPercent.textContent = `${percentage}%`;
-    }
-
-    // FIX: update ARIA attribute so assistive tech reads progress
-    if (progressBar) {
-      progressBar.setAttribute('aria-valuenow', percentage);
-    }
+    progressFill.style.width = `${pct}%`;
+    progressCount.textContent = completed.size;
+    if (progressPercent) progressPercent.textContent = `${pct}%`;
+    if (progressBar) progressBar.setAttribute('aria-valuenow', pct);
   }
 
-  window.addEventListener('scroll', updateProgress, { passive: true });
-  updateProgress(); // run once on load
+  updateUI();
+
+  let ready = false;
+
+  const progressObserver = new IntersectionObserver(
+    entries => {
+      if (!ready) return;
+      let changed = false;
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const topic = entry.target.getAttribute('data-topic');
+          if (topic && !completed.has(topic)) {
+            completed.add(topic);
+            changed = true;
+          }
+        }
+      });
+      if (changed) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]));
+        } catch (e) {
+          console.warn('Could not save progress:', e);
+        }
+        updateUI();
+      }
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -20% 0px' }
+  );
+
+  sections.forEach(s => progressObserver.observe(s));
+
+  // Prevent initial observer callback from marking everything visited
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { ready = true; });
+  });
 
   /* ════════════════════════════════════════════════════════════
      4. SMOOTH SCROLLING FOR SIDEBAR LINKS
@@ -176,45 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ════════════════════════════════════════════════════════════
-     5. LESSON COMPLETION (LocalStorage)
-     Key unchanged — preserves existing user progress.
-  ════════════════════════════════════════════════════════════ */
-  const STORAGE_KEY = 'array-learning-progress';
-
-  let completedTopics = [];
-  try {
-    completedTopics = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    completedTopics = [];
-  }
-
-  function saveProgress(topicId) {
-    if (!completedTopics.includes(topicId)) {
-      completedTopics.push(topicId);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(completedTopics));
-      } catch (e) {
-        // Storage quota exceeded or private browsing — fail silently
-        console.warn('Could not save progress to localStorage:', e);
-      }
-    }
-  }
-
-  const lessonObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          saveProgress(entry.target.id);
-        }
-      });
-    },
-    { threshold: 0.4 }
-  );
-
-  sections.forEach(section => lessonObserver.observe(section));
-
-  /* ════════════════════════════════════════════════════════════
-     6. CODE COPY BUTTONS
+     5. CODE COPY BUTTONS
      FIX: now also adds/removes the '.copied' CSS class so the
           green colour defined in CSS actually renders.
   ════════════════════════════════════════════════════════════ */
@@ -255,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ════════════════════════════════════════════════════════════
-     7. EXERCISE TOGGLE
+     6. EXERCISE TOGGLE
      FIX: now also toggles aria-expanded on the button.
   ════════════════════════════════════════════════════════════ */
   document.querySelectorAll('.arr-exercise-toggle').forEach(button => {
@@ -273,10 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
       button.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
     });
   });
-  });
 
   /* ════════════════════════════════════════════════════════════
-     8. STATS COUNTER ANIMATION
+     7. STATS COUNTER ANIMATION
      FIX: added a 'data-counted' guard so the counter only fires
           once even if IntersectionObserver re-triggers.
   ════════════════════════════════════════════════════════════ */
@@ -315,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
   counters.forEach(counter => counterObserver.observe(counter));
 
   /* ════════════════════════════════════════════════════════════
-     9. NEWSLETTER FORM — prevent page reload on static host
+     8. NEWSLETTER FORM — prevent page reload on static host
   ════════════════════════════════════════════════════════════ */
   const newsletterForm = document.getElementById('newsletterForm');
 
