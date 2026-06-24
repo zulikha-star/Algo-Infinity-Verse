@@ -42,7 +42,11 @@ const PBKDF2_ITERATIONS = 210000;
 const PASSWORD_KEY_LENGTH = 32;
 
 function sessionSecret() {
-  return process.env.SESSION_SECRET || "dev-only-change-me-with-SESSION_SECRET-before-deploying";
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production.");
+  }
+  return "dev-only-change-me-with-SESSION_SECRET-before-deploying";
 }
 
 function sign(value) {

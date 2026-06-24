@@ -24,7 +24,13 @@ const LOGIN_RATE_LIMIT = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const loginAttempts = new Map();
 
-function sessionSecret() { return process.env.SESSION_SECRET || "dev-only-change-me-with-SESSION_SECRET-before-deploying"; }
+function sessionSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production.");
+  }
+  return "dev-only-change-me-with-SESSION_SECRET-before-deploying";
+}
 function sign(v) { return crypto.createHmac("sha256", sessionSecret()).update(v).digest("base64url"); }
 function b64u(i) { return Buffer.from(i).toString("base64").replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_"); }
 function fromB64u(i) { return Buffer.from(i.replace(/-/g,"+").replace(/_/g,"/"),"base64").toString("utf8"); }

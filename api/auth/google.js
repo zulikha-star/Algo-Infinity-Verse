@@ -51,7 +51,11 @@ const SESSION_COOKIE = "aiv_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 function sessionSecret() {
-  return process.env.SESSION_SECRET || "dev-only-change-me-with-SESSION_SECRET-before-deploying";
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production.");
+  }
+  return "dev-only-change-me-with-SESSION_SECRET-before-deploying";
 }
 function sign(v) {
   return crypto.createHmac("sha256", sessionSecret()).update(v).digest("base64url");
