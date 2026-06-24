@@ -256,6 +256,8 @@ async function readJsonBody(req) {
 }
 
 function sendJson(res, status, body, headers = {}) {
+  // Note: COOP header omitted to allow Firebase signInWithPopup to access popup.closed
+  // when opening cross-origin OAuth popups (Google, etc.)
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     ...headers,
