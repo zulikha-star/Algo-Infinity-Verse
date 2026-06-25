@@ -50,16 +50,38 @@ function loadRequiredElements() {
     logPanel: "logPanel",
     clearLogsBtn: "clearLogsBtn"
   };
+
   const elements = {};
+  const missing = [];
+
   for (const [key, id] of Object.entries(idMap)) {
     const el = document.getElementById(id);
-    if (!el) console.warn(`Required element "${id}" not found`);
+    if (!el) missing.push(id);
     elements[key] = el;
   }
+
   // mode buttons use querySelectorAll
   elements.modeBtns = document.querySelectorAll('.mode-btn');
+
+  if (missing.length) {
+    // Hard-fail gracefully with a visible message instead of throwing later.
+    // (We still return partial elements to avoid breaking parsing entirely.)
+    console.error("Topological Sort Visualizer missing required DOM elements:", missing);
+    // If we can, show in validation alert area.
+    const validationAlertEl = document.getElementById("validationAlert");
+    const alertTitleEl = document.getElementById("alertTitle");
+    const alertDescriptionEl = document.getElementById("alertDescription");
+    if (validationAlertEl && alertTitleEl && alertDescriptionEl) {
+      validationAlertEl.className = "validation-alert-card cycle-detected";
+      alertTitleEl.textContent = "Visualizer UI not loaded";
+      alertDescriptionEl.textContent = `Missing UI elements: ${missing.join(", ")}. Please open the correct Topological Sort Visualizer page.`;
+      validationAlertEl.style.display = "flex";
+    }
+  }
+
   return elements;
 }
+
 
 const {
   svg,
@@ -184,11 +206,14 @@ function playSound(type) {
 
 // ===== GRAPH GRAPHICS DRAWING =====
 function renderGraph() {
+  if (!svg || !edgeGroup || !nodeGroup || !placeholder) return;
+
   if (nodes.length === 0) {
     placeholder.style.display = "block";
   } else {
     placeholder.style.display = "none";
   }
+
 
   // Clear layers
   edgeGroup.innerHTML = "";
@@ -1109,10 +1134,13 @@ function addLogEntry(text, type = "sys") {
   const entry = document.createElement("div");
   entry.className = `log-entry ${type}`;
   entry.innerHTML = `&gt; [${type.toUpperCase()}] ${text}`;
-  logPanel.appendChild(entry);
-  
-  // Auto-scroll logs
-  logPanel.scrollTop = logPanel.scrollHeight;
+  if (logPanel) {
+    logPanel.appendChild(entry);
+    
+    // Auto-scroll logs
+    logPanel.scrollTop = logPanel.scrollHeight;
+  }
+
 }
 
 // ===== EVENT LISTENERS =====
