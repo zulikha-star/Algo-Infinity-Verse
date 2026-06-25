@@ -3081,11 +3081,6 @@ else initializeQuizEditor();
 // ============================================
 // HASH CHANGE ROUTER
 // ============================================
-
-
-// ============================================
-// HASH CHANGE ROUTER
-// ============================================
 window.addEventListener('hashchange', () => {
   const currentHash = window.location.hash || '#home';
   if (currentHash === '#home' || currentHash === '') {
@@ -3095,52 +3090,33 @@ window.addEventListener('hashchange', () => {
     });
     if (typeof tQuiz !== 'undefined') tQuiz = null;
   }
-  
-  const path = window.location.pathname;
-  if (path.includes('/pages/learning/') || path.includes('/pages/visualizers/') || path.includes('/pages/resources/')) {
-    const script = document.createElement('script');
-    script.src = '/scripts/report-issue.js';
-    document.body.appendChild(script);
-  }
 });
 
-if (window.navManager) {
-  window.navManager.subscribe((state) => {
-    if (state.tab === 'practice') {
-      currentFilter = state.filter || 'all';
-      currentSearch = state.search || '';
-      
-      const searchInput = document.getElementById('searchInput');
-      const clearBtn = document.getElementById('clearSearchBtn');
-      if (searchInput) searchInput.value = currentSearch;
-      if (clearBtn) {
-          if (currentSearch.length > 0) clearBtn.classList.add('visible');
-          else clearBtn.classList.remove('visible');
-      }
-      
-      const filterButtons = document.querySelectorAll('.filter-btn');
-      filterButtons.forEach((b) => b.classList.remove('active'));
-      const activeBtn = Array.from(filterButtons).find(b => b.dataset.filter === currentFilter);
-      if (activeBtn) activeBtn.classList.add('active');
-      
-      if (typeof renderProblems === 'function') renderProblems();
-    }
-    
-    const modal = document.getElementById('quizEditorModal');
-    if (state.problem) {
-      if (!modal || !modal.classList.contains('active')) {
-        const problem = typeof practiceProblems !== 'undefined' ? practiceProblems.find(p => p.id == state.problem) : null;
-        if (problem && typeof openQuizEditor === 'function') openQuizEditor(problem, true);
-      }
-    } else {
-      if (modal && modal.classList.contains('active')) {
-        if (typeof closeQuizEditor === 'function') closeQuizEditor(true);
-      }
-    }
-  });
-
-  if (navManager.state.problem && typeof practiceProblems !== 'undefined') {
-    const problem = practiceProblems.find(p => p.id == navManager.state.problem);
-    if (problem && typeof openQuizEditor === 'function') openQuizEditor(problem, true);
-  }
+// ============================================
+// RUN PERL
+// ============================================
+let isRunning = false;
+function initPerlEditor() {
+  const codeEl = document.getElementById("perlEditor");
+  const outputEl = document.getElementById("perlOutput");
+  const runBtn = document.getElementById("runBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const sampleBtn = document.getElementById("sampleBtn");
+  if (runBtn) runBtn.addEventListener("click", runPerl);
+  if (resetBtn) resetBtn.addEventListener("click", () => { if (codeEl) codeEl.value = ""; if (outputEl) outputEl.textContent = "Run code to see output..."; });
+  if (sampleBtn) sampleBtn.addEventListener("click", () => { if (codeEl) codeEl.value = `print "Hello World\\n";\n\nmy $name = "DSA Learner";\nprint "Welcome $name\\n";`; });
 }
+
+async function runPerl() {
+  if (isRunning) return;
+  isRunning = true;
+  const editor = document.getElementById("perlEditor");
+  const output = document.getElementById("perlOutput");
+  const code = editor ? editor.value.trim() : "";
+  if (!code) { if (output) output.textContent = "❌ No code provided"; isRunning = false; return; }
+  if (output) output.textContent = "Running... ⏳";
+  try {
+    const res = await fetch("http://localhost:5000/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+    const data = await res.json().catch(() => ({}));
+    if (output) output.textContent = data.output || data.error || "No output";
+  } catch (err) { if (output) output.textContent = "Error: " + 

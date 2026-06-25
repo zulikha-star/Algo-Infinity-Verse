@@ -8319,3 +8319,39 @@ html.light-mode .report-issue-btn:hover {
   background: #6d28d9;
   box-shadow: 0 12px 30px rgba(124, 58, 237, 0.6);
 }
+/* ===== BREADCRUMBS ===== */
+.breadcrumbs {
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.breadcrumbs .breadcrumb-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumbs .breadcrumb-link:hover {
+  color: var(--text-primary);
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+.breadcrumbs .breadcrumb-separator {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  margin: 0 0.2rem;
+}
+
+.breadcrumbs .breadcrumb-active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
