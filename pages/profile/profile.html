@@ -8,6 +8,7 @@
     <!-- Core Styles -->
     <link rel="stylesheet" href="../../styles.css">
     <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="identity-card.css">
     
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,6 +53,86 @@
                 </div>
             </div>
         </header>
+
+        <!-- Coding Identity Card Section -->
+        <section class="identity-card-section glass-card">
+            <div class="section-header">
+                <h2><i class="fas fa-id-card"></i> Coding Identity Card</h2>
+            </div>
+            
+            <div class="theme-selector-container">
+                <label>Select Card Theme:</label>
+                <div class="theme-buttons">
+                    <button class="theme-btn active" data-theme="cyberpunk">Cyberpunk Neon</button>
+                    <button class="theme-btn" data-theme="cosmic">Cosmic Aurora</button>
+                    <button class="theme-btn" data-theme="obsidian">Dark Obsidian</button>
+                    <button class="theme-btn" data-theme="emerald">Emerald Forest</button>
+                </div>
+            </div>
+
+            <div class="card-display-container">
+                <div id="codingIdentityCard" class="coding-card theme-cyberpunk">
+                    <div class="card-glow"></div>
+                    <div class="card-grid"></div>
+                    
+                    <div class="card-header">
+                        <div class="logo-area">
+                            <span class="logo-icon">∞</span>
+                            <span class="logo-text">ALGO INFINITY</span>
+                        </div>
+                        <div class="card-type">DEVELOPER PASS</div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="user-section">
+                            <div class="card-avatar-container">
+                                <div class="card-avatar avatar-icon" id="cardAvatar">🚀</div>
+                                <div class="card-chip"></div>
+                            </div>
+                            <div class="user-details">
+                                <div class="user-name" id="cardUserName">Learner</div>
+                                <div class="user-level-badge" id="cardUserLevelBadge">Level 1</div>
+                                <div class="user-title" id="cardUserTitle">Beginner</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-section">
+                            <div class="stat-item">
+                                <div class="stat-label">GLOBAL RANK</div>
+                                <div class="stat-value" id="cardRank">#1</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">TOTAL XP</div>
+                                <div class="stat-value" id="cardXP">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">DAY STREAK</div>
+                                <div class="stat-value" id="cardStreak">0</div>
+                            </div>
+                        </div>
+                        
+                        <div class="footer-section">
+                            <div class="skills-area">
+                                <div class="section-label">TOP SKILLS</div>
+                                <div class="skills-list" id="cardSkills">
+                                    <span class="skill-pill">General</span>
+                                </div>
+                            </div>
+                            
+                            <div class="qr-area">
+                                <div id="cardQrCode" class="qr-code"></div>
+                                <div class="qr-label">SCAN PROFILE</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-download-actions">
+                <button id="downloadPngBtn" class="btn btn-primary"><i class="fas fa-file-image"></i> Export PNG</button>
+                <button id="downloadPdfBtn" class="btn btn-secondary"><i class="fas fa-file-pdf"></i> Export PDF</button>
+            </div>
+        </section>
 
         <!-- Solved Algorithms Section -->
         <section class="solved-section">
@@ -112,6 +193,11 @@
     <!-- Export Markdown Utility -->
     <script src="../../scripts/export-markdown.js"></script>
     
+    <!-- External Libraries for Coding Card -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- Profile Script -->
     <script src="profile.js"></script>
 
