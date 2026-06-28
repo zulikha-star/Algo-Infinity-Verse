@@ -1481,6 +1481,77 @@ if (pathname === "/api/forgot-password" && req.method === "POST") {
         );
       }
 
+      if (pathname === "/api/feedback" && req.method === "POST") {
+    const session = getSession(req);
+    let payload;
+    try {
+      payload = await readJsonBody(req);
+    } catch (err) {
+      return sendJson(res, 400, { error: "Invalid JSON body." });
+    }
+
+    const { feedbackType, subject, message } = payload;
+    if (!feedbackType || !subject || !message) {
+      return sendJson(res, 400, {
+        error: "Feedback type, subject, and message are required.",
+      });
+    }
+
+    const allowedTypes = [
+      "Suggestion",
+      "Bug Report",
+      "Feature Request",
+      "General Feedback",
+    ];
+    if (!allowedTypes.includes(feedbackType)) {
+      return sendJson(res, 400, { error: "Invalid feedback type." });
+    }
+
+    if (subject.trim().length < 3) {
+      return sendJson(res, 400, {
+        error: "Subject must be at least 3 characters long.",
+      });
+    }
+
+    if (message.trim().length < 10) {
+      return sendJson(res, 400, {
+        error: "Message must be at least 10 characters long.",
+      });
+    }
+
+    const feedbackData = {
+      userId: session ? session.sub : null,
+      userName: session ? session.name : null,
+      userEmail: session ? session.email : null,
+      feedbackType,
+      subject: subject.trim(),
+      message: message.trim(),
+      status: "new",
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      if (useFirestore) {
+        const docRef = await db.collection("feedback").add(feedbackData);
+        feedbackData.id = docRef.id;
+      } else {
+        const feedbackFile = path.join(DATA_DIR, "feedback.json");
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        let feedbackList = [];
+        try {
+          const raw = await fs.readFile(feedbackFile, "utf8");
+          feedbackList = JSON.parse(raw || "[]");
+        } catch (err) {
+          if (err.code !== "ENOENT") throw err;
+        }
+        feedbackData.id = crypto.randomUUID();
+        feedbackList.push(feedbackData);
+        await fs.writeFile(
+          feedbackFile,
+          JSON.stringify(feedbackList, null, 2) + "\n",
+        );
+      }
+
       return sendJson(res, 201, { success: true, feedback: feedbackData });
     } catch (err) {
       console.error("Error saving feedback:", err);
@@ -2256,6 +2327,189 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 500, { error: "Something went wrong." });
   }
 });
+
+// ===== PREDICT ACCEPTANCE PROBABILITY =====
+app.post('/api/predict-acceptance', async (req, res) => {
+    try {
+        const { code, language, problemId } = req.body;
+        
+        if (!code || !language || !problemId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Code, language, and problemId are required'
+            });
+        }
+
+        const analysis = analyzeCode(code, language, problemId);
+        
+        res.json({
+            success: true,
+            data: analysis
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ===== CODE ANALYSIS ENGINE =====
+function analyzeCode(code, language, problemId) {
+    let score = 100;
+    const risks = [];
+    const suggestions = [];
+    const edgeCases = [];
+
+    // 1. Check for Time Complexity risks
+    const complexityCheck = checkTimeComplexity(code);
+    if (complexityCheck.risky) {
+        score -= 20;
+        risks.push('⚠️ Possible TLE: ' + complexityCheck.reason);
+        suggestions.push('Optimize algorithm to reduce time complexity');
+    }
+
+    // 2. Check for Overflow risks
+    if (checkOverflowRisk(code)) {
+        score -= 15;
+        risks.push('⚠️ Possible integer overflow');
+        suggestions.push('Use long long or BigInt for large numbers');
+    }
+
+    // 3. Check for Edge Cases
+    const edgeCaseCheck = checkEdgeCases(code);
+    if (edgeCaseCheck.missing.length > 0) {
+        score -= 10;
+        edgeCases.push(...edgeCaseCheck.missing);
+        suggestions.push('Handle edge cases: ' + edgeCaseCheck.missing.join(', '));
+    }
+
+    // 4. Check for Syntax errors
+    if (checkSyntaxErrors(code, language)) {
+        score -= 25;
+        risks.push('❌ Syntax errors detected');
+        suggestions.push('Fix syntax errors before submitting');
+    }
+
+    // 5. Check for missing imports
+    if (checkMissingImports(code, language)) {
+        score -= 10;
+        risks.push('⚠️ Missing required imports');
+        suggestions.push('Add necessary imports');
+    }
+
+    // 6. Check for unused variables
+    if (hasUnusedVariables(code)) {
+        score -= 5;
+        suggestions.push('Remove unused variables for cleaner code');
+    }
+
+    // 7. Check for hardcoded values
+    if (hasHardcodedValues(code)) {
+        score -= 5;
+        suggestions.push('Avoid hardcoded values, use variables');
+    }
+
+    // Ensure score is between 0 and 100
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        acceptanceProbability: score,
+        riskLevel: score >= 80 ? 'Low' : score >= 60 ? 'Medium' : 'High',
+        risks: risks,
+        edgeCases: edgeCases,
+        suggestions: suggestions,
+        summary: getSummary(score)
+    };
+}
+
+// ===== HELPER FUNCTIONS =====
+
+function checkTimeComplexity(code) {
+    // Detect nested loops
+    const nestedLoops = (code.match(/for/g) || []).length > 1;
+    if (nestedLoops) {
+        return { risky: true, reason: 'Nested loops detected (O(n²) or worse)' };
+    }
+    
+    // Detect recursion without memoization
+    if (code.includes('function') && code.includes('return') && code.includes('(')) {
+        if (code.includes('fibonacci') || code.includes('factorial')) {
+            return { risky: true, reason: 'Recursion without memoization may cause TLE' };
+        }
+    }
+    
+    return { risky: false };
+}
+
+function checkOverflowRisk(code) {
+    const intTypes = ['int', 'long', 'number'];
+    const largeOperations = ['*', '+', '-', '/'];
+    
+    for (const type of intTypes) {
+        if (code.includes(type) && code.includes('*')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function checkEdgeCases(code) {
+    const missing = [];
+    
+    if (!code.includes('null') && !code.includes('undefined')) {
+        missing.push('Null/undefined inputs');
+    }
+    if (!code.includes('length') && !code.includes('size')) {
+        missing.push('Empty input');
+    }
+    if (!code.includes('max') && !code.includes('min')) {
+        missing.push('Extreme values');
+    }
+    
+    return { missing };
+}
+
+function checkSyntaxErrors(code, language) {
+    // Basic syntax check
+    const openBraces = (code.match(/{/g) || []).length;
+    const closeBraces = (code.match(/}/g) || []).length;
+    const openParens = (code.match(/\(/g) || []).length;
+    const closeParens = (code.match(/\)/g) || []).length;
+    
+    return openBraces !== closeBraces || openParens !== closeParens;
+}
+
+function checkMissingImports(code, language) {
+    const imports = ['import', 'require', 'include', '#include'];
+    const hasImport = imports.some(i => code.includes(i));
+    return !hasImport;
+}
+
+function hasUnusedVariables(code) {
+    const vars = code.match(/let\s+(\w+)|const\s+(\w+)|var\s+(\w+)/g);
+    if (!vars) return false;
+    
+    for (const v of vars) {
+        const name = v.replace(/let |const |var /g, '');
+        if (code.split(name).length <= 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasHardcodedValues(code) {
+    const numbers = code.match(/\b\d{2,}\b/g);
+    return numbers && numbers.length > 3;
+}
+
+function getSummary(score) {
+    if (score >= 80) return '✅ High chance of acceptance. Good to submit!';
+    if (score >= 60) return '⚠️ Moderate chance. Consider improving your solution.';
+    return '❌ Low chance. Review the suggestions before submitting.';
+}
 
 // --- PHASE 1 ADDITION: SOCKET.IO LOGIC ---
 const io = new SocketIOServer(server);

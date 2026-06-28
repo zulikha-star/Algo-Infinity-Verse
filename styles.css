@@ -6340,6 +6340,58 @@ html.light-mode .nav-auth-link:hover {
   }
 }
 
+/* Facts Section */
+.facts-card{
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.facts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.facts-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.facts-btn {
+    padding: 0.3rem 1rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: transform 0.2s;
+}
+
+.facts-btn:hover {
+    transform: scale(1.05);
+}
+
+.facts-content {
+    text-align: left;
+}
+
+#factText {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+#factDate {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
 
 
 /* Lock icon ring */
@@ -8522,6 +8574,7 @@ html.light-mode .report-issue-btn:hover {
 .language-badge.go { background: #00add8; color: #000; }
 .language-badge.rust { background: #dea584; color: #000; }
 .language-badge.swift { background: #fa7343; color: #fff; }
+.language-badge.kotlin { background: #7f52ff; color: #fff; }
 .language-badge.kotlin { background: #7f52ff; color: #fff; }
 .language-badge.kotlin { background: #7f52ff; color: #fff; }
 .language-badge.kotlin { background: #7f52ff; color: #fff; }

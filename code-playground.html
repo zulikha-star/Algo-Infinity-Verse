@@ -43,6 +43,22 @@
         </div>
         <textarea id="editor" aria-label="Code editor"></textarea>
         <div class="output" id="output" role="status" aria-live="polite" aria-atomic="true">Run your code to see output here...</div>
+        <button id="predictBtn" class="btn btn-primary" type="button" aria-label="Predict acceptance">
+            <i class="fas fa-chart-line"></i> Predict Acceptance
+        </button>
+        <div id="predictionModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📊 Acceptance Prediction</h3>
+                    <button class="modal-close" type="button" onclick="closePredictionModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="predictionResults">
+                        <!-- Results will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -172,6 +188,7 @@
             }
         });
 
+        // Keyboard shortcut
         // Keyboard shortcut: Ctrl+Enter to run
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -179,6 +196,14 @@
                 document.getElementById('runBtn').click();
             }
         });
+
+        document.getElementById('predictBtn').addEventListener('click', () => {
+            document.getElementById('predictionModal').style.display = 'block';
+        });
+
+        function closePredictionModal() {
+            document.getElementById('predictionModal').style.display = 'none';
+        }
 
         // Load initial template
         editor.setValue(templates.javascript);

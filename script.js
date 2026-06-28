@@ -3925,6 +3925,7 @@ function trackBadgeEarned(badgeName) {
     //Run on page load
     document.addEventListener('DOMContentLoaded' , addLanguageBadges);
     document.addEventListener('DOMContentLoaded' , addLanguageBadges);
+    document.addEventListener('DOMContentLoaded' , addLanguageBadges);
 // ============================================
 // REUSABLE ACCESSIBLE MODAL ARCHITECTURE
 // ============================================
