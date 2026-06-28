@@ -2904,7 +2904,6 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
 
 async function executeViaApi(lang, code) {
   // Make sure this points to your new secure Node.js route
-  const response = await fetch('/api/execute', {
   const response = await fetch(`${API_BASE}/api/execute`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
