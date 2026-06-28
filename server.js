@@ -46,8 +46,30 @@ import {
   getHistory,
 } from "./pages/Dsa-Battle/Battleservice.js";
 
-const upload = multer({ storage: multer.memoryStorage() }).single("resume");
-const uploadCsv = multer({ storage: multer.memoryStorage() }).single("csv");
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+}).single("resume");
+const uploadCsv = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit
+}).single("csv");
+
+function validateMagicBytes(buffer, mimeType) {
+  if (!buffer || buffer.length < 4) return false;
+  const hex = buffer.slice(0, 4).toString("hex").toUpperCase();
+  
+  if (mimeType === "application/pdf") {
+    return hex === "25504446";
+  }
+  if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return hex === "504B0304";
+  }
+  if (mimeType === "application/msword") {
+    return hex === "D0CF11E0";
+  }
+  return false;
+}
 const userSocketMap = new Map();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -678,6 +700,19 @@ async function handleApi(req, res, pathname) {
 
       if (!req.file) {
         return sendJson(res, 400, { error: "No resume file uploaded." });
+      }
+
+      const allowedMimeTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword"
+      ];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return sendJson(res, 400, { error: "Unsupported file type. Upload PDF or DOCX." });
+      }
+
+      if (!validateMagicBytes(req.file.buffer, req.file.mimetype)) {
+        return sendJson(res, 400, { error: "File content mismatch. The uploaded file's content does not match its type." });
       }
 
       const text = await extractResumeText(req.file);
@@ -1337,6 +1372,77 @@ if (pathname === "/api/forgot-password" && req.method === "POST") {
   }
 
 
+
+      if (pathname === "/api/feedback" && req.method === "POST") {
+    const session = getSession(req);
+    let payload;
+    try {
+      payload = await readJsonBody(req);
+    } catch (err) {
+      return sendJson(res, 400, { error: "Invalid JSON body." });
+    }
+
+    const { feedbackType, subject, message } = payload;
+    if (!feedbackType || !subject || !message) {
+      return sendJson(res, 400, {
+        error: "Feedback type, subject, and message are required.",
+      });
+    }
+
+    const allowedTypes = [
+      "Suggestion",
+      "Bug Report",
+      "Feature Request",
+      "General Feedback",
+    ];
+    if (!allowedTypes.includes(feedbackType)) {
+      return sendJson(res, 400, { error: "Invalid feedback type." });
+    }
+
+    if (subject.trim().length < 3) {
+      return sendJson(res, 400, {
+        error: "Subject must be at least 3 characters long.",
+      });
+    }
+
+    if (message.trim().length < 10) {
+      return sendJson(res, 400, {
+        error: "Message must be at least 10 characters long.",
+      });
+    }
+
+    const feedbackData = {
+      userId: session ? session.sub : null,
+      userName: session ? session.name : null,
+      userEmail: session ? session.email : null,
+      feedbackType,
+      subject: subject.trim(),
+      message: message.trim(),
+      status: "new",
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      if (useFirestore) {
+        const docRef = await db.collection("feedback").add(feedbackData);
+        feedbackData.id = docRef.id;
+      } else {
+        const feedbackFile = path.join(DATA_DIR, "feedback.json");
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        let feedbackList = [];
+        try {
+          const raw = await fs.readFile(feedbackFile, "utf8");
+          feedbackList = JSON.parse(raw || "[]");
+        } catch (err) {
+          if (err.code !== "ENOENT") throw err;
+        }
+        feedbackData.id = crypto.randomUUID();
+        feedbackList.push(feedbackData);
+        await fs.writeFile(
+          feedbackFile,
+          JSON.stringify(feedbackList, null, 2) + "\n",
+        );
+      }
 
       return sendJson(res, 201, { success: true, feedback: feedbackData });
     } catch (err) {

@@ -1,7 +1,7 @@
 process.env.NODE_ENV = 'test';
 
-const { default: IORedis } = await import('ioredis');
-const { Worker } = await import('bullmq');
+import IORedis from 'ioredis';
+import { Worker } from 'bullmq';
 
 // Override IORedis connection to be a no-op
 IORedis.prototype.connect = function() {
@@ -15,6 +15,6 @@ Worker.prototype.run = function() {
   return Promise.resolve();
 };
 
-const { server } = await import('../server.js');
+import { server } from '../server.js';
 console.log("Successfully imported server.js!");
 process.exit(0);

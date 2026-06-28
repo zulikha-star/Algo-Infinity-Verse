@@ -37,14 +37,34 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Validate request body size via Content-Length header
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > 100000) { // 100KB limit
+    return res.status(413).json({ error: 'Payload too large. Request body must be under 100KB.' });
+  }
+
   const { source_code, language, stdin = '' } = req.body;
-  const language_id = req.body.language_id ?? LANGUAGE_IDS[language?.toLowerCase()];
+
+  // Validate required fields and constraints
+  if (!language || typeof language !== 'string') {
+    return res.status(400).json({ error: 'language is required and must be a string' });
+  }
+  if (!source_code || typeof source_code !== 'string') {
+    return res.status(400).json({ error: 'source_code is required and must be a string' });
+  }
+  if (typeof stdin !== 'string') {
+    return res.status(400).json({ error: 'stdin must be a string' });
+  }
+
+  const MAX_CODE_LENGTH = 50000; // 50KB
+  if (source_code.length > MAX_CODE_LENGTH) {
+    return res.status(400).json({ error: `source_code exceeds maximum length of ${MAX_CODE_LENGTH} characters.` });
+  }
+
+  const language_id = req.body.language_id ?? LANGUAGE_IDS[language.toLowerCase()];
 
   if (!language_id) {
     return res.status(400).json({ error: `Unsupported language: ${language}` });
-  }
-  if (!source_code) {
-    return res.status(400).json({ error: 'source_code is required' });
   }
 
   try {

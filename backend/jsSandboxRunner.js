@@ -122,8 +122,33 @@ try {
       if (data.compile && data.compile.code !== 0) {
         runtimeError = { message: "Compilation Error:\n" + data.compile.stderr };
       } else if (data.run) {
-        stdout = data.run.stdout || "";
-        stderr = data.run.stderr || "";
+        const rawStdout = data.run.stdout || "";
+        const rawStderr = data.run.stderr || "";
+        
+        const MAX_LOG_LINES = 100;
+        const MAX_TOTAL_LOG_CHARS = 10000;
+        
+        function enforceLimits(text) {
+          if (!text) return "";
+          let lines = text.split("\n");
+          let truncated = false;
+          if (lines.length > MAX_LOG_LINES) {
+            lines = lines.slice(0, MAX_LOG_LINES);
+            truncated = true;
+          }
+          let result = lines.join("\n");
+          if (result.length > MAX_TOTAL_LOG_CHARS) {
+            result = result.slice(0, MAX_TOTAL_LOG_CHARS);
+            truncated = true;
+          }
+          if (truncated) {
+            result += "\n[Output Truncated: exceeded log size or line limits]";
+          }
+          return result;
+        }
+
+        stdout = enforceLimits(rawStdout);
+        stderr = enforceLimits(rawStderr);
         
         if (data.run.signal === "SIGKILL") {
           timedOut = true;
@@ -181,6 +206,15 @@ export async function runUserCode({
   maxOutputChars = 20000,
   showMySteps = false,
 }) {
+  const MAX_CODE_LENGTH = 50000; // 50KB limit
+  
+  if (!sourceCode || typeof sourceCode !== "string") {
+    return { ok: false, error: "Source code must be a non-empty string." };
+  }
+  if (sourceCode.length > MAX_CODE_LENGTH) {
+    return { ok: false, error: `Source code exceeds maximum length of ${MAX_CODE_LENGTH} characters.` };
+  }
+
   const normalizedTests = Array.isArray(tests) ? tests.map(normalizeTestCase) : [];
 
   // Route supported languages to Piston

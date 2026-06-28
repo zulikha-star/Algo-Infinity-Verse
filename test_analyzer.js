@@ -49,7 +49,7 @@ async function runTests() {
     stdio: "ignore"
   });
   
-  await wait(2000); // Give server time to start
+  await wait(5000); // Give server time to start
 
   let failed = false;
 

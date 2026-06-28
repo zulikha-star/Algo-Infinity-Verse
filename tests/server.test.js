@@ -217,8 +217,9 @@ describe('server.js Utility Functions', () => {
         check = expLimiter.check(key);
         expect(check.allowed).toBe(false);
         expect(check.retryAfter).toBe(2); // 1s * 2^1 = 2s
-      } finally {
+        
         Date.now = realNow;
+      } finally {
         expLimiter.stopSweeper();
       }
     });
