@@ -8725,6 +8725,16 @@ html.light-mode .report-issue-btn:hover {
   font-weight: bold;
 }
 
+/* Search Highlights */
+mark.search-highlight {
+  background-color: #ffd700;
+  color: #111;
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
 
 /* Offline Banner */
 .offline-banner {

@@ -1344,8 +1344,15 @@ let lastFilteredCacheKey = "";
 let lastFilteredProblems = [];
 
 function getFilteredProblems() {
+  if (!window.dsaSearchEngine && typeof DSASearchEngine !== 'undefined') {
+    window.dsaSearchEngine = new DSASearchEngine(practiceProblems);
+  }
+
   let filtered = practiceProblems;
-  if (currentSearch) {
+  if (currentSearch && window.dsaSearchEngine) {
+    filtered = window.dsaSearchEngine.search(currentSearch);
+  } else if (currentSearch) {
+    // Fallback if searchEngine is somehow not loaded
     const searchLower = currentSearch.toLowerCase();
     filtered = filtered.filter(p => p.title.toLowerCase().includes(searchLower) || p.tags.some(tag => tag.toLowerCase().includes(searchLower)));
   }
@@ -1398,7 +1405,10 @@ function renderProblemCards(problems) {
     const isFavorite = userProgress.favoriteProblems.includes(problem.id);
     const hasNotes = userProgress.problemNotes && userProgress.problemNotes[problem.id];
 
-    return `<div class="problem-card animate-in" data-id="${problem.id}"><div class="problem-header"><h3 class="problem-title">${recBadge}${problem.title}</h3><div class="problem-actions"><button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${problem.id}" aria-label="Favorite problem"><i class="fas fa-heart"></i></button><button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-id="${problem.id}" aria-label="Problem notes"><i class="fas fa-sticky-note"></i></button><span class="difficulty-badge ${problem.difficulty}">${problem.difficulty}</span></div></div><div class="problem-tags">${problem.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div><div class="problem-meta"><span class="acceptance-rate"><i class="fas fa-users"></i> ${problem.acceptance} acceptance</span>${isCompleted ? '<span class="completed-badge"><i class="fas fa-check"></i> Completed</span>' : ''}</div></div>`;
+    const displayTitle = problem.highlightedTitle || problem.title;
+    const snippetHtml = problem.highlightedDescription ? `<div class="problem-snippet" style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${problem.highlightedDescription}</div>` : "";
+
+    return `<div class="problem-card animate-in" data-id="${problem.id}"><div class="problem-header"><h3 class="problem-title">${recBadge}${displayTitle}</h3><div class="problem-actions"><button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${problem.id}" aria-label="Favorite problem"><i class="fas fa-heart"></i></button><button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-id="${problem.id}" aria-label="Problem notes"><i class="fas fa-sticky-note"></i></button><span class="difficulty-badge ${problem.difficulty}">${problem.difficulty}</span></div></div>${snippetHtml}<div class="problem-tags">${problem.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div><div class="problem-meta"><span class="acceptance-rate"><i class="fas fa-users"></i> ${problem.acceptance} acceptance</span>${isCompleted ? '<span class="completed-badge"><i class="fas fa-check"></i> Completed</span>' : ''}</div></div>`;
   }).join("");
 
   problemsGrid.innerHTML = html;
