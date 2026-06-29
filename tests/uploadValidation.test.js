@@ -18,6 +18,7 @@ const { server } = await import('../server.js');
 describe('Resume Upload API Validation (/api/analyze-resume)', () => {
   let port;
   let url;
+  let origin;
 
   beforeAll(async () => {
     const listenPromise = new Promise((resolve) => {
@@ -26,7 +27,8 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
       });
     });
     port = await listenPromise;
-    url = `http://127.0.0.1:${port}/api/analyze-resume`;
+    origin = `http://127.0.0.1:${port}`;
+    url = `${origin}/api/analyze-resume`;
   });
 
   afterAll(async () => {
@@ -37,6 +39,7 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
     const formData = new FormData();
     const res = await fetch(url, {
       method: 'POST',
+      headers: { Origin: origin },
       body: formData,
     });
     expect(res.status).toBe(400);
@@ -51,6 +54,7 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
 
     const res = await fetch(url, {
       method: 'POST',
+      headers: { Origin: origin },
       body: formData,
     });
     expect(res.status).toBe(400);
@@ -65,6 +69,7 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
 
     const res = await fetch(url, {
       method: 'POST',
+      headers: { Origin: origin },
       body: formData,
     });
     expect(res.status).toBe(400);
@@ -81,6 +86,7 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
 
     const res = await fetch(url, {
       method: 'POST',
+      headers: { Origin: origin },
       body: formData,
     });
     expect(res.status).toBe(413);
@@ -97,10 +103,59 @@ describe('Resume Upload API Validation (/api/analyze-resume)', () => {
 
     const res = await fetch(url, {
       method: 'POST',
+      headers: { Origin: origin },
       body: formData,
     });
     // It should pass validation, though it might fail inside extractResumeText (returning 500 or similar),
     // but the status code will NOT be 400 (content mismatch).
     expect(res.status).not.toBe(400);
+  });
+
+  it('should reject a cross-site request (no token, foreign Origin) with 403', async () => {
+    const formData = new FormData();
+    const pdfBuffer = Buffer.from('%PDF-1.4\n%...\n%%EOF');
+    formData.append('resume', new Blob([pdfBuffer], { type: 'application/pdf' }), 'resume.pdf');
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Origin: 'http://evil.example.com' },
+      body: formData,
+    });
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toBe('CSRF validation failed.');
+  });
+
+  it('should reject a state-changing request with no Origin/Referer and no token with 403', async () => {
+    const formData = new FormData();
+    const pdfBuffer = Buffer.from('%PDF-1.4\n%...\n%%EOF');
+    formData.append('resume', new Blob([pdfBuffer], { type: 'application/pdf' }), 'resume.pdf');
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('should accept a valid double-submit CSRF token without any Origin header', async () => {
+    // 1. Obtain a token + the matching HttpOnly csrfSecret cookie.
+    const tokenRes = await fetch(`${origin}/api/csrf-token`);
+    const { csrfToken } = await tokenRes.json();
+    const setCookie = tokenRes.headers.getSetCookie().find((c) => c.startsWith('csrfSecret='));
+    const csrfSecretCookie = setCookie.split(';')[0];
+
+    // 2. POST with the token header + secret cookie, but NO Origin/Referer —
+    //    the double-submit token alone must satisfy the CSRF check.
+    const formData = new FormData();
+    const pdfBuffer = Buffer.from('%PDF-1.4\n%...\n%%EOF');
+    formData.append('resume', new Blob([pdfBuffer], { type: 'application/pdf' }), 'resume.pdf');
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrfToken, Cookie: csrfSecretCookie },
+      body: formData,
+    });
+    expect(res.status).not.toBe(403);
   });
 });

@@ -5,6 +5,7 @@ import { execFile } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initializeFirebase, getDb, COLLECTIONS } from "./firebase.js";
+import { verifyCsrfToken } from "./utils/csrf-verify.js";
 import multer from "multer";
 import { extractResumeText } from "./backend/resume-analyzer/parser.js";
 import { calculateATS } from "./backend/resume-analyzer/atsScore.js";
@@ -454,7 +455,42 @@ function validateRequest(req) {
   return { valid: true };
 }
 
+// ── CSRF protection ──────────────────────────────────────────────────────────
+// Previously a CSRF token was issued by /api/csrf-token but never checked, so
+// every state-changing request was unprotected. A mutating request is now
+// accepted only when it proves it originated from our own site, via EITHER:
+//   1. a valid double-submit token — the x-csrf-token header equals
+//      HMAC(csrfSecret cookie), compared with crypto.timingSafeEqual
+//      (see verifyCsrfToken); OR
+//   2. an Origin/Referer header whose host matches our own — a value a
+//      cross-site attacker's page cannot set on a forged request.
+// A forged cross-site request carries neither and is rejected with 403.
+const CSRF_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function isSameOriginRequest(req) {
+  const host = req.headers.host;
+  if (!host) return false;
+  for (const header of [req.headers.origin, req.headers.referer]) {
+    if (!header) continue;
+    try {
+      if (new URL(header).host === host) return true;
+    } catch {
+      // Malformed Origin/Referer header — treat as untrusted.
+    }
+  }
+  return false;
+}
+
+function isCsrfRequestTrusted(req) {
+  return verifyCsrfToken(req) || isSameOriginRequest(req);
+}
+
 async function handleApi(req, res, pathname) {
+  // Reject state-changing requests that cannot prove a same-site origin.
+  if (!CSRF_SAFE_METHODS.has(req.method) && !isCsrfRequestTrusted(req)) {
+    return sendJson(res, 403, { error: "CSRF validation failed." });
+  }
+
   if (pathname === "/api/csrf-token" && req.method === "GET") {
     const secret = crypto.randomBytes(32).toString("hex");
     const token = crypto.createHmac("sha256", process.env.CSRF_SALT || "infinity-verse-secure-salt")
