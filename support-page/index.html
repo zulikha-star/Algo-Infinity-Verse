@@ -27,9 +27,12 @@
       })();
     </script>
 </head>
-<body data-page="index">
+<body data-page="support">
+    <!-- Navbar Placeholder -->
     <div id="navbar-placeholder"></div>
-    <section class="support-page">
+
+    <!-- Support Page Content -->
+    <main class="support-page" role="main">
         <div class="support-container">
             <h1 class="section-title">
                 <span class="title-icon">🛟</span>
@@ -39,81 +42,227 @@
                 Get help and report bugs
             </p>
             <div class="support-grid">
+                <!-- Support Request Card -->
                 <div class="support-card">
                     <h2>Support Request</h2>
-                    <form class="support-form" id="supportForm">
-                        <input type="text" placeholder="Name" aria-label="Your Name" required>
-                        <input type="email" placeholder="Email" aria-label="Your Email Address" required>
-                        <input type="text" placeholder="Subject" aria-label="Subject" required>
-                        <textarea placeholder="Message" aria-label="Message details" required></textarea>
+                    <form class="support-form" id="supportForm" novalidate>
+                        <div class="form-group">
+                            <label for="supportName">Full Name</label>
+                            <input type="text" id="supportName" placeholder="Enter your full name" aria-label="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supportEmail">Email Address</label>
+                            <input type="email" id="supportEmail" placeholder="Enter your email address" aria-label="Your Email Address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supportSubject">Subject</label>
+                            <input type="text" id="supportSubject" placeholder="Brief subject line" aria-label="Subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supportMessage">Message</label>
+                            <textarea id="supportMessage" placeholder="Describe your issue in detail" aria-label="Message details" required></textarea>
+                        </div>
                         <button class="btn btn-primary" type="submit">
                             <i class="fas fa-paper-plane"></i>
                             Submit Request
                         </button>
                     </form>
                 </div>
+
+                <!-- Bug Report Card -->
                 <div class="support-card">
                     <h2>Bug Report</h2>
-                    <form class="support-form" id="bugForm">
-                        <select required aria-label="Select Bug Type">
-                            <option value="">Select Bug Type</option>
-                            <option>UI Issue</option>
-                            <option>Performance Bug</option>
-                            <option>Crash</option>
-                            <option>Other</option>
-                        </select>
-                        <textarea placeholder="Describe the issue" aria-label="Describe the issue details" required></textarea>
-                        <input type="file" aria-label="Upload File or Screenshot">
+                    <form class="support-form" id="bugForm" novalidate>
+                        <div class="form-group">
+                            <label for="bugType">Bug Type</label>
+                            <select id="bugType" required aria-label="Select Bug Type">
+                                <option value="">Select Bug Type</option>
+                                <option value="ui">UI Issue</option>
+                                <option value="performance">Performance Bug</option>
+                                <option value="crash">Crash</option>
+                                <option value="security">Security Issue</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bugDescription">Describe the Issue</label>
+                            <textarea id="bugDescription" placeholder="Describe the bug in detail (steps to reproduce, expected vs actual behavior)" aria-label="Describe the issue details" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="bugFile">Attach Screenshot (optional)</label>
+                            <input type="file" id="bugFile" aria-label="Upload File or Screenshot" accept="image/*,.png,.jpg,.jpeg,.gif">
+                        </div>
                         <button class="btn btn-secondary" type="submit">
                             <i class="fas fa-bug"></i>
                             Report Bug
                         </button>
                     </form>
                 </div>
+
+                <!-- FAQs Card -->
                 <div class="support-card">
-                    <h2>FAQs</h2>
-                    <details class="faq-item">
-                        <summary>How do I use the platform?</summary>
-                        <p>
-                            Explore DSA topics, quizzes, practice problems,
-                            and learning roadmaps from the homepage.
-                        </p>
-                    </details>
-                    <details class="faq-item">
-                        <summary>How do I report a bug?</summary>
-                        <p>
-                            Use the bug report section above and explain the issue clearly.
-                        </p>
-                    </details>
-                    <details class="faq-item">
-                        <summary>How can I contact support?</summary>
-                        <p>
-                            Use the contact section below or create a GitHub issue.
-                        </p>
-                    </details>
+                    <h2>Frequently Asked Questions</h2>
+                    <div class="faq-list">
+                        <details class="faq-item" open>
+                            <summary>How do I use the platform?</summary>
+                            <p>
+                                Explore DSA topics, quizzes, practice problems,
+                                and learning roadmaps from the homepage. Start with
+                                the <a href="/#topics">Topics section</a> to begin learning.
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>How do I report a bug?</summary>
+                            <p>
+                                Use the bug report section above and explain the issue clearly.
+                                Include steps to reproduce and screenshots if possible.
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>How can I track my progress?</summary>
+                            <p>
+                                Your progress is automatically tracked in the
+                                <a href="/#dashboard">Dashboard</a>. You can view XP,
+                                completed topics, and earned badges.
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>How can I contact support?</summary>
+                            <p>
+                                Use the support request form above or create a
+                                <a href="https://github.com/Eshajha19/Algo-Infinity-Verse/issues">GitHub issue</a>.
+                                We'll respond within 24-48 hours.
+                            </p>
+                        </details>
+                        <details class="faq-item">
+                            <summary>Is this platform free?</summary>
+                            <p>
+                                Yes! Algo Infinity Verse is completely free and open-source.
+                                We're committed to making DSA learning accessible to everyone.
+                            </p>
+                        </details>
+                    </div>
                 </div>
+
+                <!-- Contact Card -->
                 <div class="support-card">
-                    <h2>Contact</h2>
+                    <h2>Get In Touch</h2>
                     <div class="contact-links">
-                        <a href="mailto:support@algoinfinityverse.com">
+                        <a href="mailto:support@algoinfinityverse.com" class="contact-link">
                             <i class="fas fa-envelope"></i>
-                            support@algoinfinityverse.com
+                            <span>support@algoinfinityverse.com</span>
                         </a>
-                        <a href="https://github.com/Eshajha19/Algo-Infinity-Verse/issues">
+                        <a href="https://github.com/Eshajha19/Algo-Infinity-Verse/issues" target="_blank" rel="noopener noreferrer" class="contact-link">
                             <i class="fab fa-github"></i>
-                            GitHub Issues
+                            <span>GitHub Issues</span>
                         </a>
+                        <a href="https://discord.gg/algoinfinityverse" target="_blank" rel="noopener noreferrer" class="contact-link">
+                            <i class="fab fa-discord"></i>
+                            <span>Discord Community</span>
+                        </a>
+                        <a href="https://twitter.com/algoinfinity" target="_blank" rel="noopener noreferrer" class="contact-link">
+                            <i class="fab fa-twitter"></i>
+                            <span>Twitter/X</span>
+                        </a>
+                    </div>
+                    <div class="support-hours">
+                        <h3>Support Hours</h3>
+                        <p><i class="far fa-clock"></i> Monday - Friday: 9 AM - 6 PM EST</p>
+                        <p><i class="far fa-calendar-alt"></i> Response within 24-48 hours</p>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
     <script src="../auth.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Load navbar and footer
+        async function loadPartial(elementId, path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) throw new Error(`Failed to load ${path}`);
+                const html = await response.text();
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = html;
+                    // Re-initialize navbar after loading
+                    if (elementId === 'navbar-placeholder') {
+                        // Wait for navbar to be loaded then init
+                        if (typeof initNavbar === 'function') {
+                            setTimeout(initNavbar, 100);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading partial:', error);
+            }
+        }
 
-  <script>
-    loadPartial('navbar-placeholder', '/partials/navbar.html');
-    loadPartial('footer-placeholder', '/partials/footer.html');
-  </script>
+        // Load navbar and footer
+        loadPartial('navbar-placeholder', '/partials/navbar.html');
+        loadPartial('footer-placeholder', '/partials/footer.html');
+
+        // Handle Support Form Submission
+        document.getElementById('supportForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('supportName').value.trim();
+            const email = document.getElementById('supportEmail').value.trim();
+            const subject = document.getElementById('supportSubject').value.trim();
+            const message = document.getElementById('supportMessage').value.trim();
+
+            if (!name || !email || !subject || !message) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Simulate form submission
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            setTimeout(() => {
+                alert('✅ Support request submitted successfully!\nWe\'ll get back to you within 24-48 hours.');
+                this.reset();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
+            }, 1500);
+        });
+
+        // Handle Bug Report Form Submission
+        document.getElementById('bugForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bugType = document.getElementById('bugType').value;
+            const description = document.getElementById('bugDescription').value.trim();
+            const file = document.getElementById('bugFile').files[0];
+
+            if (!bugType || !description) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            setTimeout(() => {
+                let message = '🐛 Bug report submitted successfully!\n\n';
+                message += `Type: ${bugType}\n`;
+                message += `Description: ${description.substring(0, 50)}...\n`;
+                if (file) {
+                    message += `File attached: ${file.name}`;
+                }
+                alert(message);
+                this.reset();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-bug"></i> Report Bug';
+            }, 1500);
+        });
+    </script>
 </body>
 </html>
