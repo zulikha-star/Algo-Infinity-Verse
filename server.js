@@ -19,6 +19,23 @@ import "./backend/jobs/worker.js"; // Initialize worker
 import { parse as csvParse } from "csv-parse/sync";
 import { v4 as uuidv4 } from "uuid";
 import { generateSdlcAdvice } from "./sdlcAdvisor.js";
+
+const JUDGE0_LANGUAGE_IDS = {
+  python:      71,
+  javascript:  63,
+  java:        62,
+  'c++':       54,
+  cpp:         54,
+  c:           50,
+  typescript:  74,
+  go:          60,
+  rust:        73,
+  ruby:        72,
+  swift:       83,
+  dart:        98,
+  haskell:     89,
+  kotlin:      78,
+};
 import { handleReportRequest } from "./backend/reports/reportGenerator.js";
 import { getUserBenchmark } from "./backend/benchmarking/percentileService.js";
 import { Server as SocketIOServer } from "socket.io";
