@@ -13,7 +13,7 @@ import { findMissingSkills } from "./backend/resume-analyzer/skills.js";
 import { getSuggestions } from "./backend/resume-analyzer/suggestions.js";
 import { analyzeWorkflow } from "./backend/repository-analyzer/cicdValidator.js";
 import { VCSFactory } from "./backend/vcs/VCSFactory.js";
-import { enqueueBulkAudit, getBatchProgress } from "./backend/jobs/queue.js";
+import { enqueueBulkAudit, getBatchProgress, MAX_BULK_AUDIT_URLS } from "./backend/jobs/queue.js";
 import "./backend/jobs/worker.js"; // Initialize worker
 
 import { parse as csvParse } from "csv-parse/sync";
@@ -36,7 +36,12 @@ import {
   forgotPasswordLimiter,
   changePasswordLimiter,
   deleteAccountLimiter,
-  resendVerificationLimiter
+  resendVerificationLimiter,
+  resumeAnalysisLimiter,
+  repoAnalysisLimiter,
+  sdlcAdvisorLimiter,
+  predictionLimiter,
+  bulkAuditLimiter
 } from "./backend/utils/rateLimiter.js";
 import { applySM2 } from "./backend/services/memory.service.js";
 import { sendVerificationEmail } from "./backend/services/email.service.js";
@@ -413,6 +418,22 @@ function getSession(req) {
   return verifyAccessToken(cookies[SESSION_COOKIE]);
 }
 
+// A team profile is private to its owner — the authenticated user who first
+// created it — and any explicitly listed members. Profiles with no recorded
+// owner are treated as unclaimed legacy data: still readable, and claimed by
+// the first authenticated user who writes them. This closes the IDOR where any
+// client could read/overwrite any profile just by knowing its id.
+function canAccessTeamProfile(profile, userId) {
+  if (!profile || !profile.ownerId) return true;
+  if (profile.ownerId === userId) return true;
+  const members = Array.isArray(profile.members) ? profile.members : [];
+  return members.some(
+    (m) =>
+      m === userId ||
+      (m && typeof m === "object" && (m.id === userId || m.userId === userId)),
+  );
+}
+
 function normalizePathname(pathname) {
   if (!pathname) return "/";
   return pathname.replace(/\/+$/, "") || "/";
@@ -778,9 +799,14 @@ async function handleApi(req, res, pathname) {
 
   if (pathname === "/api/team-profile" && req.method === "GET") {
     try {
+      const session = getSession(req);
+      if (!session) {
+        return sendJson(res, 401, { error: "Login required." });
+      }
+
       const urlParams = new URL(req.url, `http://${req.headers.host}`).searchParams;
       const teamId = urlParams.get("id");
-      
+
       if (!teamId) {
         return sendJson(res, 400, { error: "Missing team id." });
       }
@@ -796,6 +822,10 @@ async function handleApi(req, res, pathname) {
         if (snapshot.exists) {
           profileData = snapshot.data();
         }
+      }
+
+      if (profileData && !canAccessTeamProfile(profileData, session.sub)) {
+        return sendJson(res, 403, { error: "You do not have access to this team profile." });
       }
 
       if (!profileData) {
@@ -818,6 +848,11 @@ async function handleApi(req, res, pathname) {
 
   if (pathname === "/api/team-profile" && req.method === "POST") {
     try {
+      const session = getSession(req);
+      if (!session) {
+        return sendJson(res, 401, { error: "Login required." });
+      }
+
       const payload = await readJsonBody(req);
       const { id: teamId, version, name, description, members } = payload;
 
@@ -835,7 +870,14 @@ async function handleApi(req, res, pathname) {
         try {
           updatedProfile = await updateTeamProfilesStore(store => {
             const currentProfile = store[teamId] || { version: 1 };
-            
+
+            // Ownership check: only the owner/members may modify a claimed profile.
+            if (!canAccessTeamProfile(currentProfile, session.sub)) {
+              const forbiddenError = new Error("Forbidden");
+              forbiddenError.status = 403;
+              throw forbiddenError;
+            }
+
             // OCC version check
             if (currentProfile.version !== version) {
               const conflictError = new Error("Conflict");
@@ -847,6 +889,7 @@ async function handleApi(req, res, pathname) {
             // Update data and increment version
             const newProfile = {
               id: teamId,
+              ownerId: currentProfile.ownerId || session.sub,
               name: name || currentProfile.name || "New Team Profile",
               description: description !== undefined ? description : (currentProfile.description || ""),
               members: members || currentProfile.members || [],
@@ -858,8 +901,11 @@ async function handleApi(req, res, pathname) {
             return newProfile;
           });
         } catch (error) {
+          if (error.status === 403) {
+            return sendJson(res, 403, { error: "You do not have access to this team profile." });
+          }
           if (error.status === 409) {
-            return sendJson(res, 409, { 
+            return sendJson(res, 409, {
               error: "Conflict detected: The profile was updated by someone else.",
               currentVersion: error.currentVersion
             });
@@ -871,8 +917,16 @@ async function handleApi(req, res, pathname) {
         try {
           updatedProfile = await db.runTransaction(async (transaction) => {
             const doc = await transaction.get(docRef);
-            
-            const currentVersion = doc.exists ? doc.data().version : 1;
+            const existing = doc.exists ? doc.data() : null;
+
+            // Ownership check: only the owner/members may modify a claimed profile.
+            if (!canAccessTeamProfile(existing, session.sub)) {
+              const forbiddenError = new Error("Forbidden");
+              forbiddenError.status = 403;
+              throw forbiddenError;
+            }
+
+            const currentVersion = existing ? existing.version : 1;
 
             if (currentVersion !== version) {
               const conflictError = new Error("Conflict");
@@ -883,9 +937,10 @@ async function handleApi(req, res, pathname) {
 
             const newProfile = {
               id: teamId,
-              name: name || (doc.exists ? doc.data().name : "New Team Profile"),
-              description: description !== undefined ? description : (doc.exists ? doc.data().description : ""),
-              members: members || (doc.exists ? doc.data().members : []),
+              ownerId: (existing && existing.ownerId) || session.sub,
+              name: name || (existing ? existing.name : "New Team Profile"),
+              description: description !== undefined ? description : (existing ? existing.description : ""),
+              members: members || (existing ? existing.members : []),
               version: version + 1,
               updatedAt: new Date().toISOString()
             };
@@ -894,8 +949,11 @@ async function handleApi(req, res, pathname) {
             return newProfile;
           });
         } catch (error) {
+          if (error.status === 403) {
+            return sendJson(res, 403, { error: "You do not have access to this team profile." });
+          }
           if (error.status === 409) {
-            return sendJson(res, 409, { 
+            return sendJson(res, 409, {
               error: "Conflict detected: The profile was updated by someone else.",
               currentVersion: error.currentVersion
             });
@@ -948,6 +1006,9 @@ async function handleApi(req, res, pathname) {
   }
 
   if (pathname === "/api/analyze-resume" && req.method === "POST") {
+    if (!applyRateLimit(req, res, resumeAnalysisLimiter, "Too many resume analysis requests. Please try again later.")) {
+      return;
+    }
     try {
       await new Promise((resolve, reject) => {
         upload(req, res, (err) => {
@@ -996,6 +1057,9 @@ async function handleApi(req, res, pathname) {
   }
 
   if (pathname === "/api/analyze-repository" && req.method === "POST") {
+    if (!applyRateLimit(req, res, repoAnalysisLimiter, "Too many repository analysis requests. Please try again later.")) {
+      return;
+    }
     try {
       const payload = await readJsonBody(req);
       const { repoUrl } = payload;
@@ -1051,6 +1115,9 @@ async function handleApi(req, res, pathname) {
 
   // SDLC Advisor API
   if (pathname === "/api/sdlc-advisor" && req.method === "POST") {
+    if (!applyRateLimit(req, res, sdlcAdvisorLimiter, "Too many SDLC advisor requests. Please try again later.")) {
+      return;
+    }
     try {
       const payload = await readJsonBody(req);
       const { description } = payload;
@@ -1067,18 +1134,31 @@ async function handleApi(req, res, pathname) {
 
   // Bulk Audit APIs
   if (pathname === "/api/audit/bulk" && req.method === "POST") {
+    if (!applyRateLimit(req, res, bulkAuditLimiter, "Too many bulk audit requests. Please try again later.")) {
+      return;
+    }
     try {
       uploadCsv(req, res, async (err) => {
         if (err) return sendJson(res, 500, { error: "Upload error." });
         if (!req.file) return sendJson(res, 400, { error: "No CSV file uploaded." });
-        
+
         try {
           const records = csvParse(req.file.buffer.toString('utf-8'), { columns: false, skip_empty_lines: true });
           // Extract repo URLs from the first column
           const repoUrls = records.map(row => row[0]).filter(url => url && url.includes("github.com"));
-          
+
           if (repoUrls.length === 0) {
             return sendJson(res, 400, { error: "No valid GitHub URLs found in the CSV." });
+          }
+
+          // Cap batch size: each URL fans out to outbound GitHub requests, so an
+          // unbounded CSV is a denial-of-service / cost-amplification vector.
+          if (repoUrls.length > MAX_BULK_AUDIT_URLS) {
+            return sendJson(res, 400, {
+              error: `Too many repositories. A maximum of ${MAX_BULK_AUDIT_URLS} is allowed per bulk audit.`,
+              maxAllowed: MAX_BULK_AUDIT_URLS,
+              received: repoUrls.length,
+            });
           }
 
           const batchId = uuidv4();
@@ -2542,6 +2622,11 @@ if (pathname === "/api/forgot-password" && req.method === "POST") {
     return sendJson(res, 200, { ok: true });
   }
 
+  if (pathname === "/api/predict-acceptance" && req.method === "POST") {
+    if (!applyRateLimit(req, res, predictionLimiter, "Too many prediction requests. Please try again later.")) {
+      return;
+    }
+    let payload;
   // ── Execution History Endpoints ─────────────────────────────────────────
 
   if (pathname === "/api/executions" && req.method === "GET") {

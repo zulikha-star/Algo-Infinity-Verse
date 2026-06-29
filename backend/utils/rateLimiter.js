@@ -160,6 +160,44 @@ export const resendVerificationLimiter = new RateLimiter({
   backoffType: 'exponential',
 });
 
+// ── Expensive / cost-amplifying endpoints ───────────────────────────────────
+// These routes are unauthenticated tools that perform heavy work (file parsing,
+// outbound GitHub requests, LLM calls). Without limits, an anonymous client can
+// exhaust CPU, third-party rate limits, or paid API quotas. Limits are sized to
+// allow normal interactive use while blocking abuse.
+export const resumeAnalysisLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxAttempts: 15,
+  cooldownMs: 15 * 60 * 1000,
+});
+
+export const repoAnalysisLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxAttempts: 20,
+  cooldownMs: 15 * 60 * 1000,
+});
+
+export const sdlcAdvisorLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxAttempts: 15,
+  cooldownMs: 15 * 60 * 1000,
+});
+
+export const predictionLimiter = new RateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxAttempts: 30,
+  cooldownMs: 15 * 60 * 1000,
+});
+
+// Bulk audit fans out to many outbound GitHub requests per submission, so it is
+// the most expensive route — keep its budget small and the window long.
+export const bulkAuditLimiter = new RateLimiter({
+  windowMs: 60 * 60 * 1000,
+  maxAttempts: 5,
+  cooldownMs: 60 * 60 * 1000,
+  backoffType: 'exponential',
+});
+
 // Centralized helper to check and apply rate limits on HTTP server requests
 export function applyRateLimit(req, res, limiter, errorMessage = "Too many attempts. Please try again later.") {
   const key = getClientIdentifier(req);
