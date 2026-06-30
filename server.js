@@ -743,10 +743,18 @@ async function handleApi(req, res, pathname) {
       try {
         await fs.writeFile(tmpFile, instrumented, "utf8");
         await new Promise((resolve, reject) => {
-          execFile("node", [tmpFile], {
+          // Sandbox the user-submitted code: instrumentJS does NOT isolate it,
+          // so run it under Node's Permission Model (--permission denies fs,
+          // child_process, worker_threads and native addons) with an empty
+          // environment so the child cannot read server secrets (SESSION_SECRET,
+          // Firebase keys, etc.). process.execPath is used directly so the
+          // binary resolves without a PATH in the stripped env. This blocks the
+          // RCE / secret-exfiltration path while still allowing console output
+          // and the snapshot JSON written to stdout.
+          execFile(process.execPath, ["--permission", tmpFile], {
             timeout: 10000,
             maxBuffer: 1024 * 1024,
-            env: { ...process.env, NODE_OPTIONS: "" },
+            env: {},
           }, (err, stdout, stderr) => {
             if (stdout) {
               try {
