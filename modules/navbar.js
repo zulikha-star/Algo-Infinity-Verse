@@ -644,4 +644,6 @@ function initNavbarSearch() {
 }
 
 // Export all functions
-export { initNavbar, closeMobileMenu, lockBodyScroll, unlockBodyScroll };
+// Note: initNavbar is already exported inline at its declaration, so it must
+// not be re-exported here — a duplicate export makes the whole module fail to load.
+export { closeMobileMenu, lockBodyScroll, unlockBodyScroll };
