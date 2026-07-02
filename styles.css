@@ -9647,7 +9647,6 @@ mark.search-highlight {
   border-bottom-color: var(--accent);
 }
 
-
 /* ===== PROBLEM STATS ===== */
 
 .problem-stats {
@@ -10221,6 +10220,13 @@ mark.search-highlight {
     border-color: #334155;
 }
 
+/* Mobile - hide tooltip on touch devices */
+@media (hover: none) {
+    .back-to-top::after {
+        display: none;
+
+    }
+}
 .dark .shortcuts-tip kbd {
     background: #0f172a;
     border-color: #334155;
