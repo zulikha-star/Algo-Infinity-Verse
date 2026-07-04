@@ -3429,6 +3429,10 @@ socket.on('voice-ice', ({ roomId, candidate, to, from }) => {
   socket.on("start-study-round", ({ roomId, problem }) => {
     const room = studyRooms.get(roomId);
     if (!room) return;
+    if (socket.userId !== room.hostId) {
+      socket.emit('error', { message: 'Only host can start the study round' });
+      return;
+    }
 
     room.status = "playing";
     room.currentProblem = problem;
