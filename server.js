@@ -3334,51 +3334,124 @@ socket.on('ai-evaluate-code', async (data = {}) => {
     }
 });
 
+// Socket input validation helper
+const MAX_PAYLOAD_SIZE = 100 * 1024;
+const MAX_TEXT_LENGTH = 10000;
+
+function validateSocketInput(data, schema) {
+  if (!data || typeof data !== 'object') return null;
+  if (JSON.stringify(data).length > MAX_PAYLOAD_SIZE) return null;
+  const result = {};
+  for (const [key, rules] of Object.entries(schema)) {
+    if (rules.required && !(key in data)) return null;
+    if (key in data) {
+      let val = data[key];
+      if (rules.type && (val === null || typeof val !== rules.type)) return null;
+      if (rules.string && typeof val === 'string') {
+        val = val.slice(0, rules.maxLength || MAX_TEXT_LENGTH);
+        val = val.replace(/[\x00-\x1F\x7F]/g, '');
+      }
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
 // Draw events (whiteboard)
 socket.on('draw', (data) => {
-    // Broadcast to everyone else in the room
-    socket.to(data.roomId).emit('receive-draw', data);
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    imageData: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('receive-draw', valid);
 });
 
 // Clear board
-socket.on('clear-board', ({ roomId }) => {
-    socket.to(roomId).emit('receive-clear');
+socket.on('clear-board', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('receive-clear');
 });
 
 // Shared notes
-socket.on('share-notes', ({ roomId, text }) => {
-    socket.to(roomId).emit('receive-notes', text);
+socket.on('share-notes', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    text: { type: 'string', string: true, maxLength: MAX_TEXT_LENGTH }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('receive-notes', valid.text);
 });
 
 // Chat messages
 socket.on('chat-message', (data) => {
-    socket.to(data.roomId).emit('chat-message', data);
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    userName: { type: 'string', string: true },
+    text: { type: 'string', string: true, maxLength: MAX_TEXT_LENGTH }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('chat-message', valid);
 });
 
 // ── VOICE CHAT (WebRTC signaling) ──
 
-socket.on('voice-join', ({ roomId, userId }) => {
-    socket.to(roomId).emit('voice-user-joined', { userId });
+socket.on('voice-join', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    userId: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('voice-user-joined', { userId: valid.userId });
 });
 
-socket.on('voice-leave', ({ roomId, userId }) => {
-    socket.to(roomId).emit('voice-user-left', { userId });
+socket.on('voice-leave', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    userId: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  socket.to(valid.roomId).emit('voice-user-left', { userId: valid.userId });
 });
 
 // WebRTC offer
-socket.on('voice-offer', ({ roomId, offer, to, from }) => {
-    const targetSocketId = userSocketMap.get(to);
-    if (targetSocketId) io.to(targetSocketId).emit('voice-offer', { offer, from });
+socket.on('voice-offer', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    offer: { type: 'object', required: true },
+    to: { type: 'string', required: true },
+    from: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  const targetSocketId = userSocketMap.get(valid.to);
+  if (targetSocketId) io.to(targetSocketId).emit('voice-offer', { offer: valid.offer, from: valid.from });
 });
 
-socket.on('voice-answer', ({ roomId, answer, to, from }) => {
-    const targetSocketId = userSocketMap.get(to);
-    if (targetSocketId) io.to(targetSocketId).emit('voice-answer', { answer, from });
+socket.on('voice-answer', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    answer: { type: 'object', required: true },
+    to: { type: 'string', required: true },
+    from: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  const targetSocketId = userSocketMap.get(valid.to);
+  if (targetSocketId) io.to(targetSocketId).emit('voice-answer', { answer: valid.answer, from: valid.from });
 });
 
-socket.on('voice-ice', ({ roomId, candidate, to, from }) => {
-    const targetSocketId = userSocketMap.get(to);
-    if (targetSocketId) io.to(targetSocketId).emit('voice-ice', { candidate, from });
+socket.on('voice-ice', (data) => {
+  const valid = validateSocketInput(data, {
+    roomId: { type: 'string', required: true },
+    candidate: { type: 'object', required: true },
+    to: { type: 'string', required: true },
+    from: { type: 'string', string: true }
+  });
+  if (!valid) return;
+  const targetSocketId = userSocketMap.get(valid.to);
+  if (targetSocketId) io.to(targetSocketId).emit('voice-ice', { candidate: valid.candidate, from: valid.from });
 });
 
 // ── END OF ADDITIONS ──
