@@ -282,6 +282,160 @@
     <div id="quiz-placeholder"></div>
 
     <!-- Roadmap Section -->
+    <section id="roadmap" class="section roadmap-section">
+      <div class="container">
+        <h2 class="section-title">
+          <span class="title-icon">🛤️</span>
+          Learning Roadmap
+        </h2>
+        <!-- <div class="roadmap-container">
+          <div class="roadmap-progress">
+            <div class="progress-bar"></div>
+          </div>
+          <div class="roadmap-stages">
+            <div class="stage" data-level="beginner">
+              <div class="stage-marker">
+                <i class="fas fa-seedling"></i>
+              </div>
+              <h3>Beginner</h3>
+              <ul>
+                <li>Basic Programming</li>
+                <li>Arrays & Strings</li>
+                <li>Recursion</li>
+              </ul>
+              <a href="beginner-roadmap.html" class="btn btn-primary">
+                Explore Roadmap
+              </a>
+            </div>
+            <div class="stage" data-level="intermediate">
+              <div class="stage-marker">
+                <i class="fas fa-fire"></i>
+              </div>
+
+              <h3>Intermediate</h3>
+
+              <ul>
+                <li>Trees & Graphs</li>
+                <li>Dynamic Programming</li>
+                <li>Greedy Algorithms</li>
+              </ul>
+
+              <a href="intermediate-roadmap.html" class="btn btn-primary">
+                Explore Roadmap
+              </a>
+            </div>
+            <div class="stage" data-level="advanced">
+              <div class="stage-marker">
+                <i class="fas fa-crown"></i>
+              </div>
+              <h3>Advanced</h3>
+              <ul>
+                <li>System Design</li>
+                <li>Advanced Graphs</li>
+                <li>Competitive Programming</li>
+              </ul>
+              <a href="advanced-roadmap.html" class="btn btn-primary">
+                Explore Roadmap
+              </a>
+            </div>
+          </div>
+        </div> -->
+
+        <!-- Roadmap Tabs Selector -->
+        <div class="roadmap-selector">
+          <button
+            class="roadmap-tab active"
+            data-tab="basic"
+            id="roadmapBasicTab"
+          >
+            <i class="fas fa-seedling"></i> Beginner Roadmap
+          </button>
+          <button
+            class="roadmap-tab"
+            data-tab="advanced"
+            id="roadmapAdvancedTab"
+          >
+            <i class="fas fa-crown"></i> Advanced Roadmap
+          </button>
+          <button
+            class="roadmap-tab"
+            data-tab="overview"
+            id="roadmapOverviewTab"
+          >
+            <i class="fas fa-route"></i> Overall Stages
+          </button>
+        </div>
+
+        <div class="roadmap-container-wrapper">
+          <!-- Basic Roadmap (Dynamic Timeline) -->
+          <div class="roadmap-content active" id="basicRoadmapContainer">
+            <div class="roadmap-timeline" id="basicRoadmapTimeline">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Advanced Roadmap (Dynamic Timeline) -->
+          <div class="roadmap-content" id="advancedRoadmapContainer">
+            <div class="roadmap-timeline" id="advancedRoadmapTimeline">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Overall Stages Roadmap (Original) -->
+          <div class="roadmap-content" id="overviewRoadmapContainer">
+            <div class="roadmap-container">
+              <div class="roadmap-progress">
+                <div class="progress-bar" id="roadmapProgress"></div>
+              </div>
+              <div class="roadmap-stages">
+                <div class="stage big-box" data-level="beginner">
+                  <div class="stage-marker">
+                    <i class="fas fa-seedling"></i>
+                  </div>
+                  <h3>Beginner</h3>
+                  <ul>
+                    <li>Basic Programming</li>
+                    <li>Arrays & Strings</li>
+                    <li>Recursion</li>
+                  </ul>
+                  <a href="beginner-roadmap.html" class="btn btn-primary">
+                    Explore Roadmap
+                  </a>
+                </div>
+                <div class="stage big-box" data-level="intermediate">
+                  <div class="stage-marker">
+                    <i class="fas fa-fire"></i>
+                  </div>
+                  <h3>Intermediate</h3>
+                  <ul>
+                    <li>Trees & Graphs</li>
+                    <li>Dynamic Programming</li>
+                    <li>Greedy Algorithms</li>
+                  </ul>
+                  <a href="intermediate-roadmap.html" class="btn btn-primary">
+                    Explore Roadmap
+                  </a>
+                </div>
+                <div class="stage big-box" data-level="advanced">
+                  <div class="stage-marker">
+                    <i class="fas fa-crown"></i>
+                  </div>
+                  <h3>Advanced</h3>
+                  <ul>
+                    <li>System Design</li>
+                    <li>Advanced Graphs</li>
+                    <li>Competitive Programming</li>
+                  </ul>
+                  <a href="advanced-roadmap.html" class="btn btn-primary">
+                    Explore Roadmap
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     <div id="roadmap-placeholder"></div>
 
     <!-- Interview Prep Section -->
