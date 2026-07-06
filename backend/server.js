@@ -10,6 +10,7 @@ import { calculateATS } from "./resume-analyzer/atsScore.js";
 import { findMissingSkills } from "./resume-analyzer/skills.js";
 import { getSuggestions } from "./resume-analyzer/suggestions.js";
 import { setupApiRoutes } from "./routes/apiRoutes.js";
+import { CodingPersonalityAnalyzer } from "./personalityAnalyzer.js";
 
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const upload = multer({
@@ -22,7 +23,6 @@ const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
-const CodingPersonalityAnalyzer = require("./personalityAnalyzer.js");
 const MEMORY_FILE = path.join(DATA_DIR, "memory.json");
 const SESSION_COOKIE = "aiv_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
