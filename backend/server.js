@@ -10,16 +10,6 @@ import { calculateATS } from "./resume-analyzer/atsScore.js";
 import { findMissingSkills } from "./resume-analyzer/skills.js";
 import { getSuggestions } from "./resume-analyzer/suggestions.js";
 import { setupApiRoutes } from "./routes/apiRoutes.js";
-import {
-  normalizePathname,
-  sendJson,
-  redirect,
-  getSession,
-  readUsers,
-  isProtectedRoute,
-  validateRequest,
-  clearSessionCookie,
-} from "./utils/helpers.js";
 
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const upload = multer({
