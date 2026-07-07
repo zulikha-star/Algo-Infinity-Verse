@@ -1066,60 +1066,7 @@ document.addEventListener('keydown', function(e) {
     setTimeout(setupProfileListeners, 200);
 })();
 
-// PWA Service Worker Registration & Lifecycle Management
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        void 0;
-        
-        if (registration.waiting) {
-          showUpdateToast(registration.waiting);
-        }
-        
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateToast(newWorker);
-            }
-          });
-        });
-      })
-      .catch((error) => {
-        void 0;
-      });
-      
-    navigator.serviceWorker.addEventListener('message', async (event) => {
-      if (event.data && event.data.type === 'PROCESS_OFFLINE_QUEUE') {
-        if (window.offlineStore && typeof window.offlineStore.syncQueue === 'function') {
-          void 0;
-          await window.offlineStore.syncQueue();
-        }
-      }
-    });
-    
-    if (navigator.storage && navigator.storage.estimate) {
-      navigator.storage.estimate().then(estimate => {
-        const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
-        const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
-        const storageEl = document.getElementById('pwa-storage-usage');
-        if (storageEl) {
-          storageEl.textContent = `Offline Storage: ${usageMB} MB / ${quotaMB} MB`;
-        }
-      });
-    }
-  });
-}
-let refreshing = false;
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
-  });
-}
+
 
 // Offline/Online status handler
 window.addEventListener('load', () => {
@@ -1551,8 +1498,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply filter from URL if any
     applyFilterFromURL();
     
-    // Initial render
-    filterProblems();
+    // Only render problems if the page has a problems container
+    if (document.querySelector('.problems-list')) {
+        filterProblems();
+    }
 });
 
 /**
@@ -1637,6 +1586,7 @@ function filterProblemsByDifficulty(difficulty, problems) {
  * Filter problems with search and difficulty
  */
 function filterProblems() {
+    if (!document.querySelector('.problems-list')) return;
     const selectedDifficulty = getSelectedDifficulty();
     const allProblems = getAllProblems();
     const searchTerm = currentSearch || '';
@@ -1674,11 +1624,15 @@ function renderProblemsWithPagination(filteredProblems) {
     const end = Math.min(start + PROBLEMS_PER_PAGE, totalProblems);
     const pageProblems = filteredProblems.slice(start, end);
     
-    // Render the problems
-    renderProblems(pageProblems);
+    // Render the problems (only if function exists on this page)
+    if (typeof renderProblems === 'function') {
+        renderProblems(pageProblems);
+    }
     
     // Update pagination
-    updatePaginationControls(currentPage, totalPages);
+    if (typeof updatePaginationControls === 'function') {
+        updatePaginationControls(currentPage, totalPages);
+    }
 }
 
 /**

@@ -6,7 +6,7 @@ const QUEUE_KEY = 'algoInfinityReviewQueue';
  * Retrieves the review queue from localStorage
  * @returns {Object} Queue indexed by itemId
  */
-export function getReviewQueue() {
+function getReviewQueue() {
   try {
     const data = localStorage.getItem(QUEUE_KEY);
     return data ? JSON.parse(data) : {};
@@ -20,7 +20,7 @@ export function getReviewQueue() {
  * Saves the review queue to localStorage
  * @param {Object} queue 
  */
-export function saveReviewQueue(queue) {
+function saveReviewQueue(queue) {
   try {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch (e) {
@@ -32,7 +32,7 @@ export function saveReviewQueue(queue) {
  * Get items due for review today or earlier
  * @returns {Array} List of due items
  */
-export function getDueItems() {
+function getDueItems() {
   const queue = getReviewQueue();
   const now = Date.now();
   return Object.values(queue).filter(item => item.nextReviewDate <= now);
@@ -48,7 +48,7 @@ export function getDueItems() {
  * @param {boolean} isCorrect Whether the answer was correct
  * @param {number} timeToSolve Time taken to solve in seconds (optional)
  */
-export function scheduleReview(itemId, topic, difficulty, isCorrect, timeToSolve = 30) {
+function scheduleReview(itemId, topic, difficulty, isCorrect, timeToSolve = 30) {
   const queue = getReviewQueue();
   
   let record = queue[itemId] || {
