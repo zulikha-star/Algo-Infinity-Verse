@@ -646,16 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateConsoleUI([]);
 });
 
-// ====== UPDATE LINE NUMBERS (from editor.js) ======
-function updateLineNumbers() {
-    const lines = document.getElementById('codeEditor').value.split('\n');
-    const count = lines.length;
-    let html = '';
-    for (let i = 1; i <= count; i++) {
-        html += `<span>${i}</span>`;
-    }
-    document.getElementById('lineNumbers').innerHTML = html;
-}
+// updateLineNumbers() is defined in editor.js, loaded before this file.
 
 // Re-initialize when code changes
 document.getElementById('codeEditor').addEventListener('input', () => {
