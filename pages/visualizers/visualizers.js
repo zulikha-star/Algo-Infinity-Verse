@@ -134,6 +134,7 @@ const visualizers = [
   { name: "HNSW Visualizer", path: "/pages/ai-features/hnsw-visualizer/hnsw-visualizer.html", category: "Data Structures", icon: "fa-sitemap", desc: "Explore Hierarchical Navigable Small World graphs for approximate nearest neighbor search." },
 
   // ── Special & Creative ──
+  { name: "Flowchart Builder", path: "/pages/visualizers/flowchart-builder/flowchart-builder.html", category: "Special", icon: "fa-project-diagram", desc: "Drag-and-drop flowchart builder for algorithm design." },
   { name: "Turing Machine Simulator", path: "/pages/visualizers/turing-machine-simulator/turing-machine-simulator.html", category: "Special", icon: "fa-floppy-disk", desc: "Program and run your own Turing machine with tape and states." },
   { name: "Minimax & Alpha-Beta", path: "/pages/visualizers/minimax-visualizer/minimax-visualizer.html", category: "Special", icon: "fa-chess", desc: "Game AI tree search with minimax and alpha-beta pruning." },
   { name: "Suffix Automaton Explorer", path: "/pages/visualizers/suffix-automaton-explorer/suffix-automaton-explorer.html", category: "Special", icon: "fa-dna", desc: "Build and query suffix automata for advanced string processing." },
