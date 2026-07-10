@@ -662,6 +662,7 @@ function openQuizEditor(problem) {
     document.getElementById('outputHeader')?.addEventListener('click', toggleOutputPanel);
   }
 
+  modal.classList.remove("hidden");
   modal.classList.add("active");
   updateLineNumbers();
   syncScroll();
@@ -691,7 +692,17 @@ function openQuizEditor(problem) {
   if (sm2Container) sm2Container.style.display = "none";
 }
 
-function closeQuizEditor() { const el = document.getElementById("quizEditorModal"); if (el) el.classList.remove("active"); currentProblem = null; }
+function closeQuizEditor() {
+  const el = document.getElementById("quizEditorModal");
+  if (el) {
+    el.classList.remove("active");
+    // Clean up hidden class added by initModalManager's closeModal overlay handler
+    el.classList.remove("hidden");
+  }
+  currentProblem = null;
+  // Ensure body scroll is always restored, regardless of MutationObserver timing
+  document.body.classList.remove("modal-open");
+}
 
 async function runQuizCode() {
   if (_running) return;

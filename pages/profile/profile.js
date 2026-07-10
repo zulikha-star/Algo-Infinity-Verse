@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (typeof openQuizEditor === 'function') {
                     // We need to trigger the editor, maybe navigate to main page with a hash
-                    window.location.href = `../../index.html?problem=${problem.id}#practice`;
+                    window.location.href = `../../pages/practice/problems.html?problem=${problem.id}`;
                 }
             });
 

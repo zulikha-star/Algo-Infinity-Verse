@@ -211,7 +211,7 @@ const PATHS = {
       icon: '<i class="fas fa-code" style="color: #f43f5e;"></i>',
       difficulty: "hard",
       hours: 18,
-      link: "/index.html#practice",
+      link: "/pages/practice/problems.html",
       desc: "Greedy, two-pointer, divide & conquer, string algorithms"
     },
     {
