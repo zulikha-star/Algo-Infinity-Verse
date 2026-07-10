@@ -1,3 +1,5 @@
+import { startTelemetry } from "./backend/utils/telemetry.js";
+startTelemetry();
 import { setupWebRTCSignaling } from "./backend/services/webrtc.service.js";
 import crypto from "crypto";
 import fs from "fs/promises";
