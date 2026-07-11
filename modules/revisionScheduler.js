@@ -55,9 +55,9 @@ export function buildReason(progress, topicKey) {
   const quizScore = progress.quizScores?.[topicKey]?.bestScore || 0;
   const completedCount = progress.completedProblems?.length || 0;
   const topicProblems = getTopicProblemCount(topicKey);
-  if (quizScore < 60) return 'Low quiz accuracy suggests a quick review is helpful.';
-  if (topicProblems > 0 && completedCount < topicProblems) return 'You have prior learning history for this topic and should reinforce it.';
-  return 'A regular review keeps this topic fresh for interviews.';
+  if (quizScore < 60) return ' Low quiz accuracy suggests a quick review is helpful.';
+  if (topicProblems > 0 && completedCount < topicProblems) return '📚 You have prior learning history for this topic and should reinforce it.';
+  return ' A regular review keeps this topic fresh for interviews.';
 }
 
 export function buildRevisionTasks(progress = {}) {
@@ -74,11 +74,24 @@ export function buildRevisionTasks(progress = {}) {
     const priority = weaknessScore >= 25 || quizScore < 60 ? PRIORITY_LEVELS.high : (attempted > 0 ? PRIORITY_LEVELS.medium : PRIORITY_LEVELS.low);
     const stage = Number(schedule.currentStage) || 0;
 
-    const nextReviewResult = defaultRevisionEngine.calculateNext(schedule, {
-      scorePercentage: quizScore,
-      isIncorrect: false,
-      difficulty: getTopicDifficulty(topicKey)
-    });
+    //  FIX: Pass configuration to handle last stage properly
+    const nextReviewResult = defaultRevisionEngine.calculateNext(
+      schedule, 
+      {
+        scorePercentage: quizScore,
+        isIncorrect: false,
+        difficulty: getTopicDifficulty(topicKey)
+      },
+      {
+        passThreshold: 60,
+        perfectThreshold: 90,
+        markCompleteAfterLast: true, //  This will mark as complete!
+        maxStages: DEFAULT_INTERVALS.length
+      }
+    );
+
+    //  Check if topic is complete
+    const isComplete = nextReviewResult.isComplete || false;
 
     return {
       id: `${topicKey}-${index}`,
@@ -92,20 +105,30 @@ export function buildRevisionTasks(progress = {}) {
       intervalDays: nextReviewResult.intervalDays,
       nextReviewDate: nextReviewResult.nextReviewDate,
       score: quizScore,
-      scoreValue: weaknessScore + repeatScore + (index * 2)
+      scoreValue: weaknessScore + repeatScore + (index * 2),
+      isComplete: isComplete, // New field to track completion
+      message: nextReviewResult.message || '' //  Add message for feedback
     };
   }).sort((left, right) => right.scoreValue - left.scoreValue);
 
   const calculatedStats = calculateStats(state);
   const todayKey = toDateKey(new Date());
 
+  //  Count completed topics
+  const completedTopics = tasks.filter(task => task.isComplete).length;
+  const totalTopics = tasks.length;
+  const completionRate = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+
   const calendar = {
     ...state.revisionCalendar,
     tasks,
     stats: {
-      pending: tasks.filter(task => !task.completed).length,
+      pending: tasks.filter(task => !task.completed && !task.isComplete).length,
       completed: tasks.filter(task => task.completed).length,
-      upcoming: tasks.filter(task => !task.completed).length,
+      upcoming: tasks.filter(task => !task.completed && !task.isComplete).length,
+      completedTopics: completedTopics,
+      totalTopics: totalTopics,
+      completionRate: completionRate,
       weeklyCompletion: calculatedStats.weeklyCompletionRate,
       monthlyCompletion: calculatedStats.monthlyCompletionRate,
       averageConsistency: calculatedStats.overallRetentionEstimate
@@ -130,23 +153,35 @@ export function toggleRevisionTaskCompletion(taskId, progress = {}) {
   const revisionSchedule = { ...(state.revisionSchedule || {}) };
   const currentSchedule = revisionSchedule[targetTask.topicKey] || { currentStage: 0, history: [] };
 
-  const nextReviewResult = defaultRevisionEngine.calculateNext(currentSchedule, {
-    scorePercentage: updatedTask.completed ? 100 : 0,
-    isIncorrect: !updatedTask.completed, // If uncompleting, treat as incorrect reset
-    difficulty: targetTask.difficulty
-  });
+  //  FIX: Pass config to calculateNext
+  const nextReviewResult = defaultRevisionEngine.calculateNext(
+    currentSchedule,
+    {
+      scorePercentage: updatedTask.completed ? 100 : 0,
+      isIncorrect: !updatedTask.completed,
+      difficulty: targetTask.difficulty
+    },
+    {
+      passThreshold: 60,
+      perfectThreshold: 90,
+      markCompleteAfterLast: true,
+      maxStages: DEFAULT_INTERVALS.length
+    }
+  );
 
   revisionSchedule[targetTask.topicKey] = {
     ...currentSchedule,
     currentStage: nextReviewResult.nextStage,
     nextReviewDate: updatedTask.completed ? nextReviewResult.nextReviewDate : null,
+    isComplete: nextReviewResult.isComplete || false, // ✅ Store completion status
     history: [
       ...(currentSchedule.history || []),
       {
         reviewedAt: now.toISOString(),
         stageCompleted: nextReviewResult.nextStage,
         daysCalculated: nextReviewResult.intervalDays,
-        nextReviewDueDate: updatedTask.completed ? nextReviewResult.nextReviewDate : null
+        nextReviewDueDate: updatedTask.completed ? nextReviewResult.nextReviewDate : null,
+        isComplete: nextReviewResult.isComplete || false
       }
     ]
   };
@@ -163,7 +198,7 @@ export function toggleRevisionTaskCompletion(taskId, progress = {}) {
       ...state.revisionCalendar,
       tasks: updatedTasks,
       history: nextHistory.slice(-120),
-      streak: state.revisionCalendar.streak, // calculated dynamically by stats
+      streak: state.revisionCalendar.streak,
       longestStreak: state.revisionCalendar.longestStreak,
       todayKey: dayKey
     }
@@ -174,10 +209,18 @@ export function toggleRevisionTaskCompletion(taskId, progress = {}) {
   nextState.reviewStreak = calculatedStats.streak;
   nextState.revisionCalendar.streak = calculatedStats.streak;
   nextState.revisionCalendar.longestStreak = calculatedStats.longestStreak;
+  
+  //  Updated stats with completion tracking
+  const completedTopics = updatedTasks.filter(task => task.isComplete).length;
+  const totalTopics = updatedTasks.length;
+  
   nextState.revisionCalendar.stats = {
-    pending: updatedTasks.filter(task => !task.completed).length,
+    pending: updatedTasks.filter(task => !task.completed && !task.isComplete).length,
     completed: updatedTasks.filter(task => task.completed).length,
-    upcoming: updatedTasks.filter(task => !task.completed).length,
+    upcoming: updatedTasks.filter(task => !task.completed && !task.isComplete).length,
+    completedTopics: completedTopics,
+    totalTopics: totalTopics,
+    completionRate: totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0,
     weeklyCompletion: calculatedStats.weeklyCompletionRate,
     monthlyCompletion: calculatedStats.monthlyCompletionRate,
     averageConsistency: calculatedStats.overallRetentionEstimate
