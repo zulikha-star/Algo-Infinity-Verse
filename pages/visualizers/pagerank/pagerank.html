@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PageRank · Algo Infinity Verse</title>
+<meta name="description" content="An interactive visualizer for Google's PageRank algorithm — watch a directed web graph converge to its principal eigenvector via the power method, with random-surfer particles demonstrating the damping factor.">
+<link rel="stylesheet" href="pagerank.css">
+</head>
+<body>
+
+<div id="starfield"></div>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <a href="../../index.html" class="brand">
+      <span class="logo-mark">🕸️</span>
+      <span class="name">Algo Infinity Verse</span>
+    </a>
+
+    <div class="page-title">
+      <h1>PageRank</h1>
+      <p>Fluid network flow · power iteration to the principal eigenvector</p>
+    </div>
+
+    <div class="topbar-actions">
+      <span class="crumb">Visualizers / <strong>PageRank</strong></span>
+      <button class="icon-btn" id="pauseBtn" title="Pause / resume physics &amp; particles">⏸</button>
+    </div>
+  </header>
+
+  <!-- ============ Workspace ============ -->
+  <main class="workspace">
+
+    <!-- ---------- Left panel: graph + damping controls ---------- -->
+    <aside class="panel">
+      <div class="panel-header"><span class="dot"></span><h2>Web Graph</h2></div>
+      <div class="panel-body">
+
+        <div class="control-group">
+          <div class="control-label"><span>Pages (nodes)</span><span class="val" id="nodeCountVal">16</span></div>
+          <input type="range" id="nodeCountSlider" min="6" max="30" step="1" value="16">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><span>Avg. links per page</span><span class="val" id="edgeDensityVal">2.5</span></div>
+          <input type="range" id="edgeDensitySlider" min="1" max="5" step="0.5" value="2.5">
+        </div>
+
+        <div class="control-group">
+          <button class="btn primary full" id="regenBtn">🔀 Regenerate web graph</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+          <div class="control-label"><span>Damping factor (d)</span><span class="val" id="dampingVal">0.85</span></div>
+          <input type="range" id="dampingSlider" min="0" max="0.99" step="0.01" value="0.85">
+          <p class="hint" style="margin-top:6px;">Probability the random surfer follows a link instead of teleporting to a random page.</p>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><span>Random surfers (particles)</span><span class="val" id="particleCountVal">400</span></div>
+          <input type="range" id="particleCountSlider" min="0" max="1200" step="50" value="400">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toggle-row">
+          <span>Auto-iterate PageRank</span>
+          <label class="switch">
+            <input type="checkbox" id="toggleAutoIterate" checked>
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span>Force-directed layout</span>
+          <label class="switch">
+            <input type="checkbox" id="toggleForces" checked>
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span>Show edge arrows</span>
+          <label class="switch">
+            <input type="checkbox" id="toggleArrows" checked>
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="stepBtn">Step iteration</button>
+          <button class="btn" id="resetRankBtn">Reset ranks</button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ---------- Center: canvas viewport ---------- -->
+    <section class="panel viewport-panel">
+      <div id="viewport">
+        <canvas id="pagerankCanvas" role="img" aria-label="Interactive PageRank directed graph visualization with animated random-surfer particles"></canvas>
+
+        <div class="viewport-overlay">
+          <span class="chip">Nodes <strong id="chipNodes">0</strong></span>
+          <span class="chip">Edges <strong id="chipEdges">0</strong></span>
+          <span class="chip">Dangling <strong id="chipDangling">0</strong></span>
+          <span class="chip" id="chipConvergedWrap">Δ <strong id="chipDelta">—</strong></span>
+        </div>
+
+        <div class="legend-strip">
+          <div class="row"><span class="dot2" style="background:#a78bfa"></span> node area ∝ PageRank</div>
+          <div class="row"><span class="dot2" style="background:#06b6d4"></span> surfer following a link</div>
+          <div class="row"><span class="dot2" style="background:#facc15"></span> teleport (damping jump)</div>
+        </div>
+
+        <div class="bottom-readout">
+          <span>Iteration <strong id="roIter">0</strong></span>
+          <span class="sep">/</span>
+          <span>d = <strong id="roDamping">0.85</strong></span>
+          <span class="sep">|</span>
+          <span>ΣPR = <strong id="roSum">1.000</strong></span>
+          <span class="sep">|</span>
+          <span id="roStatus">converging…</span>
+        </div>
+
+        <div class="loading-veil" id="loadingVeil">
+          <div class="spinner"></div>
+          <p>spinning up the web graph…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Right panel: convergence + rankings ---------- -->
+    <aside class="panel">
+      <div class="panel-header"><span class="dot"></span><h2>Convergence Telemetry</h2></div>
+      <div class="panel-body">
+
+        <div class="convergence-badge" id="convergenceBadge">
+          <span class="pulse"></span>
+          <span id="convergenceLabel">Converging…</span>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-box"><div class="num" id="statIter">0</div><div class="lbl">Iterations</div></div>
+          <div class="stat-box"><div class="num" id="statDelta">1.000</div><div class="lbl">L1 delta</div></div>
+        </div>
+
+        <div class="control-label" style="margin-bottom:4px;"><span>Delta history (log scale)</span></div>
+        <svg id="sparkline" viewBox="0 0 280 56" preserveAspectRatio="none"></svg>
+
+        <div class="divider"></div>
+
+        <div class="control-label"><span>Top pages by PageRank</span></div>
+        <div class="rank-list" id="rankList"></div>
+
+        <div class="divider"></div>
+        <p class="hint">Each iteration performs one matrix–vector multiply: <strong>PR' = (1-d)/N + d·M·PR</strong>, where M encodes the graph's link structure (dangling pages redistribute their mass uniformly). Repeating this power-method step converges PR to the graph's principal eigenvector.</p>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<script src="pagerank.js"></script>
+</body>
+</html>
