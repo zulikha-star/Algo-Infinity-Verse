@@ -816,6 +816,13 @@ const visualizers = [
     desc: 'Relational database internals: B-trees, pages, and query planning.',
   },
   {
+    name: 'Memory Layout Explorer',
+    path: '/pages/visualizers/data-structure-memory-layout-explorer/data-structure-memory-layout-explorer.html',
+    category: 'Data Structures',
+    icon: 'fa-memory',
+    desc: 'See how arrays, linked lists, trees, hash tables, queues, and stacks are laid out in memory.',
+  },
+  {
     name: 'SDLC Visualizer',
     path: '/pages/visualizers/sdlc-visualizer/sdlc-visualizer.html',
     category: 'Data Structures',
