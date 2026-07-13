@@ -219,12 +219,44 @@ export async function setupLearningSessionRoutes(req, res, pathname) {
     const payload = await readJsonBody(req);
 
     const type = String(payload?.type || payload?.eventType || '');
+const SUPPORTED_LEARNING_EVENT_TYPES = [
+  'problem_attempted',
+  'problem_solved',
+  'quiz_attempted',
+  'xp_earned',
+  'badge_unlocked',
+  'topic_visited',
+  'code_playground_used',
+  'session_started',
+];
 
-          if (!type || !SUPPORTED_LEARNING_EVENT_TYPES.includes(type)) {
+async function setupLearningSessionRoutes(req, res, pathname) {
+    if (!type || !SUPPORTED_LEARNING_EVENT_TYPES.includes(type)) {
       return sendJson(res, 400, {
         success: false,
         error: `Invalid learning event type: "${type}". Supported types are: ${SUPPORTED_LEARNING_EVENT_TYPES.join(', ')}.`
       });
+    }
+
+    const rawTopicKey = payload?.topicKey ?? payload?.topic ?? null;
+    let validatedTopicKey = null;
+    const MAX_TOPIC_KEY_LENGTH = 150;
+
+    if (rawTopicKey !== null) {
+      if (typeof rawTopicKey !== 'string') {
+        return sendJson(res, 400, { success: false, error: 'topicKey must be a string if provided.' });
+      }
+      const trimmedTopicKey = rawTopicKey.trim();
+      if (trimmedTopicKey.length === 0) {
+        return sendJson(res, 400, { success: false, error: 'topicKey cannot be empty or contain only whitespace.' });
+      }
+      if (trimmedTopicKey.length > MAX_TOPIC_KEY_LENGTH) {
+        return sendJson(res, 400, { success: false, error: `topicKey cannot exceed ${MAX_TOPIC_KEY_LENGTH} characters.` });
+      }
+      if (!/^[a-zA-Z0-9 _-]+$/.test(trimmedTopicKey)) {
+        return sendJson(res, 400, { success: false, error: 'Invalid topicKey format. Only letters, numbers, spaces, hyphens, and underscores are allowed.' });
+      }
+      validatedTopicKey = trimmedTopicKey;
     }
 
     const event = {
@@ -233,7 +265,7 @@ export async function setupLearningSessionRoutes(req, res, pathname) {
       sessionId: null,
       type,
       timestamp: nowIso(),
-      topicKey: payload?.topicKey || payload?.topic || null,
+      topicKey: validatedTopicKey, // Sanitized value assigned
       payload: normalizeEventPayload(payload?.payload || payload?.data || {}),
     };
 
